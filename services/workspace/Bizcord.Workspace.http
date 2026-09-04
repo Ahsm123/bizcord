@@ -1,0 +1,6 @@
+@Bizcord.Workspace_HostAddress = http://localhost:5226
+
+GET {{Bizcord.Workspace_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
