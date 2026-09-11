@@ -1,3 +1,4 @@
 <Solution>
+  <Project Path="Bizcord.Messaging/Bizcord.Messaging.csproj" />
   <Project Path="services/workspace/Bizcord.Workspace.csproj" />
 </Solution>
