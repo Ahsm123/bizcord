@@ -1,4 +1,6 @@
 <Solution>
-  <Project Path="apps/messaging/Bizcord.Messaging.csproj" />
-  <Project Path="apps/workspace/Bizcord.Workspace.csproj" />
+  <Folder Name="/apps/">
+    <Project Path="apps/messaging/Bizcord.Messaging.csproj" />
+    <Project Path="apps/workspace/Bizcord.Workspace.csproj" />
+  </Folder>
 </Solution>
