@@ -2,6 +2,6 @@
 
 public class Member
 {
-    public Guid UserId { get; set; }
-    public Role Role { get; set; }
+    public required Guid UserId { get; init; }
+    public required Role Role { get; init; }
 }
