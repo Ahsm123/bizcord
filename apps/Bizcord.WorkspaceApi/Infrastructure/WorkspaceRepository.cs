@@ -1,4 +1,5 @@
 using Bizcord.WorkspaceApi.Models;
+using Bizcord.WorkspaceContracts.Dto;
 using Dapper;
 using Npgsql;
 
@@ -43,27 +44,27 @@ internal sealed class WorkspaceRepository(NpgsqlDataSource dataSource) : IWorksp
             new { workspace.Id, workspace.Name },
             transaction: tx,
             cancellationToken: ct));
-        
+
         // We need to delete the members and channels in the db and insert them from the workspace list,
         // since dapper does not have change tracking
         await connection.ExecuteAsync(new CommandDefinition(
             "delete from members where workspace_id = @id",
             new { id = workspace.Id },
-            transaction: tx, 
+            transaction: tx,
             cancellationToken: ct));
 
         await connection.ExecuteAsync(new CommandDefinition(
             "insert into members (user_id, role, workspace_id) values (@UserId, @Role, @WorkspaceId)",
-            workspace.Members.Select(m => new { WorkspaceId = workspace.Id, m.UserId, Role = m.Role.ToString()}),
+            workspace.Members.Select(m => new { WorkspaceId = workspace.Id, m.UserId, Role = m.Role.ToString() }),
             transaction: tx,
             cancellationToken: ct));
 
         await connection.ExecuteAsync(new CommandDefinition(
             "delete from channels where workspace_id = @id",
             new { id = workspace.Id },
-            transaction: tx, 
+            transaction: tx,
             cancellationToken: ct));
-        
+
         await connection.ExecuteAsync(new CommandDefinition(
             "insert into channels (id, name, workspace_id) values (@Id, @Name, @WorkspaceId)",
             workspace.Channels.Select(c => new { WorkspaceId = workspace.Id, c.Id, c.Name }),
@@ -72,5 +73,20 @@ internal sealed class WorkspaceRepository(NpgsqlDataSource dataSource) : IWorksp
 
         await tx.CommitAsync(ct);
     }
-}
 
+    public async Task<IReadOnlyList<WorkspaceDto>> ListForUserAsync(Guid userId, CancellationToken ct = default)
+    {
+        const string sql = """
+                           select w.id, w.name 
+                           from workspaces w
+                           join members m on m.workspace_id = w.id
+                           where m.user_id = @userId
+                           """;
+
+        await using var connection = await dataSource.OpenConnectionAsync(ct);
+        var workspaces = await connection.QueryAsync<WorkspaceDto>(new CommandDefinition(sql, new { userId },
+            cancellationToken: ct));
+
+        return workspaces.ToList();
+    }
+}

@@ -1,5 +1,6 @@
 using System.Reflection;
 using Bizcord.WorkspaceApi.Infrastructure;
+using Bizcord.WorkspaceApi.Services;
 using DbUp;
 using Npgsql;
 using Scalar.AspNetCore;
@@ -23,6 +24,7 @@ if (args.Contains("migrate"))
 // Add services to the container.
 builder.Services.AddSingleton(_ => NpgsqlDataSource.Create(connectionString));
 builder.Services.AddScoped<IWorkspaceRepository, WorkspaceRepository>();
+builder.Services.AddScoped<IWorkspaceService, WorkspaceService>();
 builder.Services.AddControllers();
 builder.Services.AddOpenApi();
 
