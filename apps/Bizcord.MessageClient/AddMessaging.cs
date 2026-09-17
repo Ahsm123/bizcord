@@ -1,7 +1,7 @@
-using Bizcord.Messaging.Clients;
+using Bizcord.MessageClient.Clients;
 using EasyNetQ;
 
-namespace Bizcord.Messaging;
+namespace Bizcord.MessageClient;
 
 public static class MessagingServiceCollectionExtensions
 {
@@ -9,7 +9,7 @@ public static class MessagingServiceCollectionExtensions
     {
         var connection = configuration.GetConnectionString("Messaging");
         services.AddEasyNetQ(connection);
-        services.AddSingleton<IMessageClient, MessageClient>();
+        services.AddSingleton<IMessageClient, Clients.MessageClient>();
         return services;
     }
 }

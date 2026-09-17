@@ -1,6 +1,6 @@
 using EasyNetQ;
 
-namespace Bizcord.Messaging.Clients;
+namespace Bizcord.MessageClient.Clients;
 
 public class MessageClient : IMessageClient
 {

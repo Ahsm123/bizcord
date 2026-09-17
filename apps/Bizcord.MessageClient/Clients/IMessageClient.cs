@@ -1,4 +1,4 @@
-namespace Bizcord.Messaging.Clients;
+namespace Bizcord.MessageClient.Clients;
 
 public interface IMessageClient
 {

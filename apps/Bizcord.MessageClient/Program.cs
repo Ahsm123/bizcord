@@ -1,4 +1,4 @@
-using Bizcord.Messaging;
+using Bizcord.MessageClient;
 
 var builder = WebApplication.CreateBuilder(args);
 
