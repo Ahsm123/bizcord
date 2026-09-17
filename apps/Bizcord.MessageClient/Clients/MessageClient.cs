@@ -2,19 +2,13 @@ using EasyNetQ;
 
 namespace Bizcord.MessageClient.Clients;
 
-public class MessageClient : IMessageClient
+public class MessageClient(IBus bus) : IMessageClient
 {
-    private readonly IBus _bus;
     private readonly Dictionary<string, IAsyncDisposable> _subscriptions = new();
-    
-    public MessageClient(IBus bus)
-    {
-        _bus = bus;
-    }
-    
+
     public Task PublishAsync<T>(T message, CancellationToken ct = default)
     {
-        var task = _bus.PubSub.PublishAsync(message, ct);
+        var task = bus.PubSub.PublishAsync(message, ct);
         return task;
     }
 
@@ -24,7 +18,7 @@ public class MessageClient : IMessageClient
         {
             throw new ArgumentException($"The subscriber {subscriberId} is already subscribed");
         }
-        var handle = await _bus.PubSub.SubscribeAsync(subscriberId, handler, ct);
+        var handle = await bus.PubSub.SubscribeAsync(subscriberId, handler, ct);
         _subscriptions[subscriberId] = handle;
     }
 
