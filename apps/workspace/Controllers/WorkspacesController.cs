@@ -1,6 +1,9 @@
-﻿namespace Bizcord.WorkspaceApi.Controllers;
+using Microsoft.AspNetCore.Mvc;
 
-public class WorkspacesController
+namespace Bizcord.WorkspaceApi.Controllers;
+
+[ApiController]
+[Route("api/v1/[controller]")]
+public class WorkspacesController : ControllerBase
 {
-    
 }

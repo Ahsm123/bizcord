@@ -13,7 +13,7 @@ Workspace Service:
     Owns workspaces, like Discord servers, which have Channels inside them, and the membership and roles.
     This handles Authz since this might be per workspace scoped, and therefor lives here rather than with authn.
 
-    Workspaces, channels, membership, roles, channel permission
+    Workspaces, channels, members, roles, permissions
 
 ## Notifications
 

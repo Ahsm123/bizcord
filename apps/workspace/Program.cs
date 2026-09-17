@@ -1,12 +1,14 @@
 using System.Reflection;
+using Bizcord.WorkspaceApi.Infrastructure;
 using DbUp;
+using Npgsql;
 
 var builder = WebApplication.CreateBuilder(args);
 
+var connectionString = builder.Configuration.GetConnectionString("Workspace")!;
+
 if (args.Contains("migrate"))
 {
-    var connectionString = builder.Configuration.GetConnectionString("Workspace")!;
-
     var upgrade = DeployChanges.To
         .PostgresqlDatabase(connectionString)
         .WithScriptsEmbeddedInAssembly(Assembly.GetExecutingAssembly())
@@ -18,6 +20,9 @@ if (args.Contains("migrate"))
 }
 
 // Add services to the container.
+builder.Services.AddSingleton(_ => NpgsqlDataSource.Create(connectionString));
+builder.Services.AddScoped<IWorkspaceRepository, WorkspaceRepository>();
+builder.Services.AddControllers();
 builder.Services.AddOpenApi();
 
 var app = builder.Build();
@@ -29,7 +34,7 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+app.MapControllers();
 
 app.Run();
 return 0;
-

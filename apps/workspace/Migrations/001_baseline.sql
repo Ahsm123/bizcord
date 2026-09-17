@@ -7,7 +7,7 @@ create table members(
     workspace_id uuid not null,
     user_id uuid not null,
     role text not null,
-    primary key (workspace_id, user_id),
+    primary key (workspace_id, user_id)
 );
 
 create table channels(
