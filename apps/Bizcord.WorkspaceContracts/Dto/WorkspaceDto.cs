@@ -1,3 +1,3 @@
 ﻿namespace Bizcord.WorkspaceContracts.DTO;
 
-public record WorkspaceDTO();
+public record WorkspaceDto(Guid Id, string Name);
