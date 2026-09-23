@@ -4,4 +4,7 @@
     <Project Path="apps/Bizcord.MessageClient/Bizcord.MessageClient.csproj" />
     <Project Path="apps/Bizcord.WorkspaceApi/Bizcord.WorkspaceApi.csproj" />
   </Folder>
+  <Folder Name="/Solution Items/">
+    <File Path="compose.yaml" />
+  </Folder>
 </Solution>

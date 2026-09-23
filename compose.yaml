@@ -1,0 +1,35 @@
+﻿services:
+  workspace-service:
+    build:
+      context: .
+      dockerfile: apps/Bizcord.WorkspaceApi/Dockerfile
+    ports:
+      - "8081:8080"
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ConnectionStrings__Messaging: "host=rabbitmq;username=kalo;password=kalo"
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+        
+  rabbitmq:
+    image: rabbitmq:4-management
+    container_name: rabbitmq
+    restart: always
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: kalo
+      RABBITMQ_DEFAULT_PASS: kalo
+    volumes:
+      - rabbitmq-lib:/var/lib/rabbitmq/
+      - rabbitmq-log:/var/log/rabbitmq
+    healthcheck:
+      test: [ "CMD-SHELL", "rabbitmq-diagnostics ping" ]
+      interval: 5s
+      retries: 10 
+  
+volumes:
+  rabbitmq-lib:
+  rabbitmq-log:

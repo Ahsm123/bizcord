@@ -6,7 +6,7 @@ FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 ARG BUILD_CONFIGURATION=Release
 WORKDIR /src
 COPY ["apps/Bizcord.WorkspaceApi/Bizcord.WorkspaceApi.csproj", "apps/Bizcord.WorkspaceApi/"]
-COPY ["apps/Bizcord.WorkspaceContracts/Bizcord.WorkspaceContracts.csproj", "apps/Bizcord.Bizcord.WorkspaceContracts/"]
+COPY ["apps/Bizcord.WorkspaceContracts/Bizcord.WorkspaceContracts.csproj", "apps/Bizcord.WorkspaceContracts/"]
 RUN dotnet restore "apps/Bizcord.WorkspaceApi/Bizcord.WorkspaceApi.csproj"
 COPY . .
 WORKDIR /src/apps/Bizcord.WorkspaceApi
