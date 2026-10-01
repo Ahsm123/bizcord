@@ -1,3 +1,5 @@
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 using Bizcord.MessageClient.Clients;
 using EasyNetQ;
 

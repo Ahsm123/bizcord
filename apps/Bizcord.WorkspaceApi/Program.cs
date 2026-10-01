@@ -1,6 +1,11 @@
 using System.Reflection;
+using Bizcord.MessageClient;
+using Bizcord.MessageClient.Handlers;
+using Bizcord.Shared.Events;
+using Bizcord.WorkspaceApi.Handlers;
 using Bizcord.WorkspaceApi.Infrastructure;
 using Bizcord.WorkspaceApi.Services;
+using Bizcord.WorkspaceApi.Workers;
 using DbUp;
 using Npgsql;
 using Scalar.AspNetCore;
@@ -25,6 +30,9 @@ if (args.Contains("migrate"))
 builder.Services.AddSingleton(_ => NpgsqlDataSource.Create(connectionString));
 builder.Services.AddScoped<IWorkspaceRepository, WorkspaceRepository>();
 builder.Services.AddScoped<IWorkspaceService, WorkspaceService>();
+builder.Services.AddMessaging(builder.Configuration);
+builder.Services.AddSingleton<IMessageHandler<MessagePostedEvent>, MessagePostedHandler>();
+builder.Services.AddHostedService<MessagePostedWorker>();
 builder.Services.AddControllers();
 builder.Services.AddOpenApi();
 
