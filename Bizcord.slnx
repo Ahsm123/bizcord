@@ -2,6 +2,7 @@
   <Folder Name="/apps/">
     <Project Path="apps/Bizcord.WorkspaceContracts/Bizcord.WorkspaceContracts.csproj" />
     <Project Path="apps/Bizcord.MessageClient/Bizcord.MessageClient.csproj" />
+    <Project Path="apps/Bizcord.Shared/Bizcord.Shared.csproj" />
     <Project Path="apps/Bizcord.WorkspaceApi/Bizcord.WorkspaceApi.csproj" />
   </Folder>
   <Folder Name="/Solution Items/">
