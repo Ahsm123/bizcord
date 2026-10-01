@@ -18,6 +18,8 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\Bizcord.MessageClient\Bizcord.MessageClient.csproj" />
+    <ProjectReference Include="..\Bizcord.Shared\Bizcord.Shared.csproj" />
     <ProjectReference Include="..\Bizcord.WorkspaceContracts\Bizcord.WorkspaceContracts.csproj" />
   </ItemGroup>
 

@@ -7,6 +7,8 @@ ARG BUILD_CONFIGURATION=Release
 WORKDIR /src
 COPY ["apps/Bizcord.WorkspaceApi/Bizcord.WorkspaceApi.csproj", "apps/Bizcord.WorkspaceApi/"]
 COPY ["apps/Bizcord.WorkspaceContracts/Bizcord.WorkspaceContracts.csproj", "apps/Bizcord.WorkspaceContracts/"]
+COPY ["apps/Bizcord.Shared/Bizcord.Shared.csproj", "apps/Bizcord.Shared/"]
+COPY ["apps/Bizcord.MessageClient/Bizcord.MessageClient.csproj", "apps/Bizcord.MessageClient/"]
 RUN dotnet restore "apps/Bizcord.WorkspaceApi/Bizcord.WorkspaceApi.csproj"
 COPY . .
 WORKDIR /src/apps/Bizcord.WorkspaceApi
