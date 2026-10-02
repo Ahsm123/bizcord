@@ -45,7 +45,7 @@ internal sealed class WorkspaceRepository(NpgsqlDataSource dataSource) : IWorksp
             transaction: tx,
             cancellationToken: ct));
 
-        // We need to delete the members and channels in the db and insert them from the workspace list,
+        // We need to delete the members in the db and insert them from the workspace list,
         // since dapper does not have change tracking
         await connection.ExecuteAsync(new CommandDefinition(
             "delete from members where workspace_id = @id",
@@ -59,15 +59,29 @@ internal sealed class WorkspaceRepository(NpgsqlDataSource dataSource) : IWorksp
             transaction: tx,
             cancellationToken: ct));
 
+        // Channels are upserted instead, so deleting them doesn't cascade away their channel_activity rows
         await connection.ExecuteAsync(new CommandDefinition(
-            "delete from channels where workspace_id = @id",
-            new { id = workspace.Id },
+            "delete from channels where workspace_id = @id and not (id = any(@ids))",
+            new { id = workspace.Id, ids = workspace.Channels.Select(c => c.Id).ToArray() },
             transaction: tx,
             cancellationToken: ct));
 
         await connection.ExecuteAsync(new CommandDefinition(
-            "insert into channels (id, name, workspace_id) values (@Id, @Name, @WorkspaceId)",
+            """
+            insert into channels (id, name, workspace_id) values (@Id, @Name, @WorkspaceId)
+            on conflict (id) do update set name = excluded.name
+            """,
             workspace.Channels.Select(c => new { WorkspaceId = workspace.Id, c.Id, c.Name }),
+            transaction: tx,
+            cancellationToken: ct));
+
+        await connection.ExecuteAsync(new CommandDefinition(
+            """
+            insert into channel_activity (channel_id)
+            select id from channels where workspace_id = @id
+            on conflict (channel_id) do nothing
+            """,
+            new { id = workspace.Id },
             transaction: tx,
             cancellationToken: ct));
 
@@ -88,5 +102,20 @@ internal sealed class WorkspaceRepository(NpgsqlDataSource dataSource) : IWorksp
             cancellationToken: ct));
 
         return workspaces.ToList();
+    }
+
+    public async Task<bool> UpdateChannelLastActivityAsync(Guid channelId, DateTime postedAt,
+        CancellationToken ct = default)
+    {
+        const string sql = """
+                           update channel_activity
+                           set last_activity_at = @postedAt
+                           where channel_id = @channelId and last_activity_at < @postedAt;
+                           """;
+
+        await using var connection = await dataSource.OpenConnectionAsync(ct);
+        var rows = await connection.ExecuteAsync(new CommandDefinition(sql, new { channelId, postedAt },
+            cancellationToken: ct));
+        return rows > 0;
     }
 }

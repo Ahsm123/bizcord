@@ -11,7 +11,7 @@ public class MessagePostedHandlerTests
     {
         var messageId = Guid.NewGuid();
         var client = new FakeMessageClient();
-        var handler = new MessagePostedHandler(client);
+        var handler = new MessagePostedHandler(client, new FakeWorkspaceRepository());
 
         await handler.Handle(new MessagePostedEvent
         {
@@ -31,7 +31,7 @@ public class MessagePostedHandlerTests
     public async Task Handler_CanConsume_MinimumValidContract()
     {
         var client = new FakeMessageClient();
-        var handler = new MessagePostedHandler(client);
+        var handler = new MessagePostedHandler(client, new FakeWorkspaceRepository());
 
         Func<Task> act = () => handler.Handle(new MessagePostedEvent
         {
