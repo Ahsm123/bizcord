@@ -8,10 +8,30 @@
     environment:
       ASPNETCORE_ENVIRONMENT: Development
       ConnectionStrings__Messaging: "host=rabbitmq;username=kalo;password=kalo"
+      ConnectionStrings__Workspace: "Host=postgres;Database=bizcord_workspace;Username=postgres;Password=postgres"
     depends_on:
       rabbitmq:
         condition: service_healthy
-        
+      postgres:
+        condition: service_healthy
+
+  postgres:
+    image: postgres:17
+    container_name: postgres
+    restart: always
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_DB: bizcord_workspace
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U postgres -d bizcord_workspace" ]
+      interval: 5s
+      retries: 10
+
   rabbitmq:
     image: rabbitmq:4-management
     container_name: rabbitmq
@@ -33,3 +53,4 @@
 volumes:
   rabbitmq-lib:
   rabbitmq-log:
+  postgres-data:

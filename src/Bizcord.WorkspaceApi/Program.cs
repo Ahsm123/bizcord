@@ -31,7 +31,7 @@ builder.Services.AddSingleton(_ => NpgsqlDataSource.Create(connectionString));
 builder.Services.AddScoped<IWorkspaceRepository, WorkspaceRepository>();
 builder.Services.AddScoped<IWorkspaceService, WorkspaceService>();
 builder.Services.AddMessaging(builder.Configuration);
-builder.Services.AddSingleton<IMessageHandler<MessagePostedEvent>, MessagePostedHandler>();
+builder.Services.AddScoped<IMessageHandler<MessagePostedEvent>, MessagePostedHandler>();
 builder.Services.AddHostedService<MessagePostedWorker>();
 builder.Services.AddControllers();
 builder.Services.AddOpenApi();

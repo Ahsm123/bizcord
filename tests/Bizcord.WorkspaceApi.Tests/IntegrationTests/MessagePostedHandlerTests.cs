@@ -1,5 +1,7 @@
 using Bizcord.MessageClient.Clients;
 using Bizcord.Shared.Events;
+using Bizcord.WorkspaceApi.Infrastructure;
+using Bizcord.WorkspaceApi.Models;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.DependencyInjection;
@@ -16,15 +18,27 @@ public class MessagePostedHandlerTests(WebApplicationFactory<Program> factory)
             b.UseSetting("ConnectionStrings:Messaging", "host=localhost;username=kalo;password=kalo"));
         var client = app.Services.GetRequiredService<IMessageClient>();
         var messageId = Guid.NewGuid();
+
+        // The handler only publishes for channels that exist, so create one first
+        var owner = Guid.NewGuid();
+        var channelId = Guid.NewGuid();
+        var workspace = Workspace.Create(owner, $"test-{Guid.NewGuid()}");
+        workspace.CreateChannel(owner, channelId, "general");
+        using (var scope = app.Services.CreateScope())
+        {
+            await scope.ServiceProvider.GetRequiredService<IWorkspaceRepository>().SaveAsync(workspace);
+        }
+
         var capture = new MessageCapture<ChannelActivityUpdatedEvent>(client);
 
         await client.PublishAsync(new MessagePostedEvent
         {
             MessageId = messageId,
-            ChannelId = Guid.NewGuid(),
+            ChannelId = channelId,
             AuthorId = Guid.NewGuid(),
             Content = "Hello world",
-            PostedAt = DateTime.UtcNow
+            // Ahead of the channel's initial now(), even if the container clock drifts a bit
+            PostedAt = DateTime.UtcNow.AddMinutes(1)
         });
 
         var result = await capture.WaitForMessageAsync(TimeSpan.FromSeconds(5));
