@@ -5,13 +5,13 @@ EXPOSE 8080
 FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 ARG BUILD_CONFIGURATION=Release
 WORKDIR /src
-COPY ["apps/Bizcord.WorkspaceApi/Bizcord.WorkspaceApi.csproj", "apps/Bizcord.WorkspaceApi/"]
-COPY ["apps/Bizcord.WorkspaceContracts/Bizcord.WorkspaceContracts.csproj", "apps/Bizcord.WorkspaceContracts/"]
-COPY ["apps/Bizcord.Shared/Bizcord.Shared.csproj", "apps/Bizcord.Shared/"]
-COPY ["apps/Bizcord.MessageClient/Bizcord.MessageClient.csproj", "apps/Bizcord.MessageClient/"]
-RUN dotnet restore "apps/Bizcord.WorkspaceApi/Bizcord.WorkspaceApi.csproj"
+COPY ["src/Bizcord.WorkspaceApi/Bizcord.WorkspaceApi.csproj", "src/Bizcord.WorkspaceApi/"]
+COPY ["src/Bizcord.WorkspaceContracts/Bizcord.WorkspaceContracts.csproj", "src/Bizcord.WorkspaceContracts/"]
+COPY ["src/Bizcord.Shared/Bizcord.Shared.csproj", "src/Bizcord.Shared/"]
+COPY ["src/Bizcord.MessageClient/Bizcord.MessageClient.csproj", "src/Bizcord.MessageClient/"]
+RUN dotnet restore "src/Bizcord.WorkspaceApi/Bizcord.WorkspaceApi.csproj"
 COPY . .
-WORKDIR /src/apps/Bizcord.WorkspaceApi
+WORKDIR /src/src/Bizcord.WorkspaceApi
 RUN dotnet build "Bizcord.WorkspaceApi.csproj" -c $BUILD_CONFIGURATION -o /app/build
 
 FROM build AS publish
