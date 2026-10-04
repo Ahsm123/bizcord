@@ -1,12 +1,12 @@
 using Bizcord.WorkspaceApi.Models;
-using Bizcord.WorkspaceContracts.Dto;
+using Bizcord.Contracts.Workspaces;
 
 namespace Bizcord.WorkspaceApi.Services;
 
 public interface IWorkspaceService
 {
-    Task<Workspace?> CreateAsync(Guid ownerId, string name);
-    Task<Workspace?> GetByIdAsync(Guid id);
-    Task<IReadOnlyList<WorkspaceDto>> ListForUserAsync(Guid userId);
+    Task<Workspace> CreateAsync(Guid ownerId, string name, CancellationToken ct);
+    Task<Workspace?> GetByIdAsync(Guid id, CancellationToken ct);
+    Task<IReadOnlyList<WorkspaceDto>> GetAllAsync(Guid userId, CancellationToken ct);
     
 }

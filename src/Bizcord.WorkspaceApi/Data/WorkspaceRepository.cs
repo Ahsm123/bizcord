@@ -1,13 +1,13 @@
 using Bizcord.WorkspaceApi.Models;
-using Bizcord.WorkspaceContracts.Dto;
+using Bizcord.Contracts.Workspaces;
 using Dapper;
 using Npgsql;
 
-namespace Bizcord.WorkspaceApi.Infrastructure;
+namespace Bizcord.WorkspaceApi.Data;
 
 internal sealed class WorkspaceRepository(NpgsqlDataSource dataSource) : IWorkspaceRepository
 {
-    public async Task<Workspace?> GetByIdAsync(Guid id, CancellationToken ct = default)
+    public async Task<Workspace> GetByIdAsync(Guid id, CancellationToken ct = default)
     {
         const string sql = """
                            select name from workspaces where id = @id;
@@ -20,11 +20,6 @@ internal sealed class WorkspaceRepository(NpgsqlDataSource dataSource) : IWorksp
             new CommandDefinition(sql, new { id }, cancellationToken: ct));
 
         var name = await results.ReadSingleOrDefaultAsync<string>();
-        if (name is null)
-        {
-            return null;
-        }
-
         var members = await results.ReadAsync<Member>();
         var channels = await results.ReadAsync<Channel>();
 

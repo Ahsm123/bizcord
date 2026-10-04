@@ -1,6 +1,6 @@
 using Bizcord.MessageClient.Clients;
 using Bizcord.Shared.Events;
-using Bizcord.WorkspaceApi.Infrastructure;
+using Bizcord.WorkspaceApi.Data;
 using Bizcord.WorkspaceApi.Models;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.Hosting;

@@ -1,4 +1,4 @@
-﻿using Bizcord.WorkspaceApi.Helpers;
+﻿using Bizcord.WorkspaceApi.Extensions;
 
 namespace Bizcord.WorkspaceApi.Models;
 

@@ -1,40 +1,50 @@
-﻿services:
-  workspace-service:
+services:
+  workspace-db:
+    image: postgres:17
+    ports:
+      - "5433:5432"
+    environment:
+      POSTGRES_DB: workspace
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    volumes:
+      - workspace-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U postgres -d workspace" ]
+      interval: 5s
+      retries: 10
+
+  workspace-migrator:
+    image: bizcord-workspace-api
+    build:
+      context: .
+      dockerfile: src/Bizcord.WorkspaceApi/Dockerfile
+    command: [ "migrate" ]
+    environment:
+      ConnectionStrings__Database: "Host=workspace-db;Port=5432;Database=workspace;Username=postgres;Password=postgres"
+    depends_on:
+      workspace-db:
+        condition: service_healthy
+
+  workspace-api:
+    image: bizcord-workspace-api
     build:
       context: .
       dockerfile: src/Bizcord.WorkspaceApi/Dockerfile
     ports:
-      - "8081:8080"
+      - "5001:8080"
     environment:
       ASPNETCORE_ENVIRONMENT: Development
+      ConnectionStrings__Database: "Host=workspace-db;Port=5432;Database=workspace;Username=postgres;Password=postgres"
       ConnectionStrings__Messaging: "host=rabbitmq;username=kalo;password=kalo"
-      ConnectionStrings__Workspace: "Host=postgres;Database=bizcord_workspace;Username=postgres;Password=postgres"
     depends_on:
       rabbitmq:
         condition: service_healthy
-      postgres:
-        condition: service_healthy
-
-  postgres:
-    image: postgres:17
-    container_name: postgres
-    restart: always
-    ports:
-      - "5432:5432"
-    environment:
-      POSTGRES_DB: bizcord_workspace
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-    volumes:
-      - postgres-data:/var/lib/postgresql/data
-    healthcheck:
-      test: [ "CMD-SHELL", "pg_isready -U postgres -d bizcord_workspace" ]
-      interval: 5s
-      retries: 10
+      workspace-migrator:
+        condition: service_completed_successfully
 
   rabbitmq:
     image: rabbitmq:4-management
-    container_name: rabbitmq
     restart: always
     ports:
       - "5672:5672"
@@ -48,9 +58,9 @@
     healthcheck:
       test: [ "CMD-SHELL", "rabbitmq-diagnostics ping" ]
       interval: 5s
-      retries: 10 
-  
+      retries: 10
+
 volumes:
+  workspace-db-data:
   rabbitmq-lib:
   rabbitmq-log:
-  postgres-data:

@@ -1,7 +1,7 @@
 ﻿using Bizcord.MessageClient.Clients;
 using Bizcord.MessageClient.Handlers;
 using Bizcord.Shared.Events;
-using Bizcord.WorkspaceApi.Infrastructure;
+using Bizcord.WorkspaceApi.Data;
 
 namespace Bizcord.WorkspaceApi.Handlers;
 

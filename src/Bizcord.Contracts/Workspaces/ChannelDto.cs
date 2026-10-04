@@ -1,3 +1,3 @@
-﻿namespace Bizcord.WorkspaceContracts.Dto;
+﻿namespace Bizcord.Contracts.Workspaces;
 
 public record ChannelDto(Guid Id, string Name, Guid WorkspaceId);

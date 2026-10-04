@@ -1,57 +1,50 @@
 using Bizcord.WorkspaceApi.Requests;
 using Bizcord.WorkspaceApi.Services;
-using Bizcord.WorkspaceContracts.Dto;
+using Bizcord.Contracts.Workspaces;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Bizcord.WorkspaceApi.Controllers;
 
 [ApiController]
-[Route("api/v1/[controller]")]
+[Route("api/v1/workspaces")]
 public class WorkspacesController(IWorkspaceService workspaceService)
     : ControllerBase
 {
-
     [HttpPost]
     [ProducesResponseType(StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<ActionResult<WorkspaceDto>> Create([FromHeader(Name = "X-User-Id")] Guid ownerId, CreateWorkspaceRequest request)
+    public async Task<ActionResult<WorkspaceDto>> Create([FromHeader(Name = "X-User-Id")] Guid ownerId,
+        CreateWorkspaceRequest request, CancellationToken ct)
     {
         if (string.IsNullOrWhiteSpace(request.Name))
         {
-           return BadRequest("Workspace needs a valid name");
+            return BadRequest("Workspace needs a valid name");
         }
-        
-        var workspace = await workspaceService.CreateAsync(ownerId, request.Name);
-        if (workspace == null)
-        {
-            return BadRequest("Failed to create workspace");
-        }
-        
+
+        var workspace = await workspaceService.CreateAsync(ownerId, request.Name, ct);
         var dto = new WorkspaceDto(workspace.Id, workspace.Name);
-        
         return CreatedAtAction(nameof(GetById), new { id = workspace.Id }, dto);
     }
 
     [HttpGet("{id:guid}")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<ActionResult<WorkspaceDto>> GetById(Guid id)
+    public async Task<ActionResult<WorkspaceDto>> GetById(Guid id, CancellationToken ct)
     {
-        var workspace = await workspaceService.GetByIdAsync(id);
-        if (workspace == null)
+        var workspace = await workspaceService.GetByIdAsync(id, ct);
+        if (workspace is null)
         {
             return NotFound();
         }
-        
+
         var dto = new WorkspaceDto(workspace.Id, workspace.Name);
         return Ok(dto);
     }
 
     [HttpGet]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    public async Task<ActionResult<IReadOnlyList<WorkspaceDto>>> List([FromHeader(Name = "X-User-Id")] Guid userId)
+    public async Task<ActionResult<IReadOnlyList<WorkspaceDto>>> GetAll([FromHeader(Name = "X-User-Id")] Guid userId,
+        CancellationToken ct)
     {
-        var userWorkspaces = await workspaceService.ListForUserAsync(userId);
+        var userWorkspaces = await workspaceService.GetAllAsync(userId, ct);
         return Ok(userWorkspaces);
     }
 }

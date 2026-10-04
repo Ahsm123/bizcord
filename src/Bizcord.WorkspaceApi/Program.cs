@@ -3,7 +3,7 @@ using Bizcord.MessageClient;
 using Bizcord.MessageClient.Handlers;
 using Bizcord.Shared.Events;
 using Bizcord.WorkspaceApi.Handlers;
-using Bizcord.WorkspaceApi.Infrastructure;
+using Bizcord.WorkspaceApi.Data;
 using Bizcord.WorkspaceApi.Services;
 using Bizcord.WorkspaceApi.Workers;
 using DbUp;
@@ -12,7 +12,8 @@ using Scalar.AspNetCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
-var connectionString = builder.Configuration.GetConnectionString("Workspace")!;
+var connectionString = builder.Configuration.GetConnectionString("Database")
+    ?? throw new InvalidOperationException("Missing ConnectionStrings:Database");
 
 if (args.Contains("migrate"))
 {

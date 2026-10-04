@@ -1,6 +1,6 @@
 ﻿using Bizcord.WorkspaceApi.Models;
 
-namespace Bizcord.WorkspaceApi.Helpers;
+namespace Bizcord.WorkspaceApi.Extensions;
 
 public static class RoleExtensions
 {

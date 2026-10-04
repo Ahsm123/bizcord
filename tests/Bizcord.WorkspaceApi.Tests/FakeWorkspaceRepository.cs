@@ -1,6 +1,6 @@
-using Bizcord.WorkspaceApi.Infrastructure;
+using Bizcord.WorkspaceApi.Data;
 using Bizcord.WorkspaceApi.Models;
-using Bizcord.WorkspaceContracts.Dto;
+using Bizcord.Contracts.Workspaces;
 
 namespace Bizcord.WorkspaceApi.Tests;
 

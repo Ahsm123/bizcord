@@ -1,7 +1,7 @@
 using Bizcord.WorkspaceApi.Models;
-using Bizcord.WorkspaceContracts.Dto;
+using Bizcord.Contracts.Workspaces;
 
-namespace Bizcord.WorkspaceApi.Infrastructure;
+namespace Bizcord.WorkspaceApi.Data;
 
 public interface IWorkspaceRepository
 {
