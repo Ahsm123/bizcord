@@ -9,7 +9,7 @@ public class WorkspaceService(IWorkspaceRepository workspaceRepository) : IWorks
     public async Task<Workspace> CreateAsync(Guid ownerId, string name, CancellationToken ct)
     {
         // TODO: verify the owner exists in the profile service before creating,
-        // and return null when it does not. Blocked until the profile service exists.
+        // TODO: and return null when it does not. Blocked until the profile service exists.
         var workspace = Workspace.Create(ownerId, name);
         await workspaceRepository.SaveAsync(workspace, ct);
 

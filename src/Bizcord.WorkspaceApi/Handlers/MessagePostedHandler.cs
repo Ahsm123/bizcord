@@ -14,12 +14,12 @@ public class MessagePostedHandler(
         var updated = await repository.UpdateChannelLastActivityAsync(message.ChannelId, message.PostedAt, cancellationToken);
         if (!updated)
             return;
-        
-        await messageClient.PublishAsync(new ChannelActivityUpdatedEvent()
-        {
-            MessageId = message.MessageId,
-            ChannelId = message.ChannelId,
-            ProcessedAt = DateTime.UtcNow
-        }, cancellationToken);
+
+        await messageClient.PublishAsync(
+            new ChannelActivityUpdatedEvent(
+                message.MessageId,
+                message.ChannelId,
+                message.PostedAt),
+            cancellationToken);
     }
 }
