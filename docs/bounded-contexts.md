@@ -4,15 +4,17 @@
 
 Profile Service:
     Owns the user record internally, everything the users see about another user,
-    display name, avatar, status etc. Authn is most likely handled by 3rd party.
+    display name, avatar, status etc. 
+    Authn is handled by an external identity provider(idp) and not by any of these services.
 
-**Not:** authn, workspace membership or roles.
+**Not:** **authn, workspace membership or roles.**
 
 ## Workspace + Channels
 
 Workspace Service:
     Owns workspaces, like Discord servers, which have Channels inside them, and the membership and roles.
-    This handles Authz since this might be per workspace scoped, and therefor lives here rather than with authn.
+    Channels are not their own service since they only exist inside a workspace and use the same members and roles.
+    This handles authz beacuse the roles are per workspace, so it lives here instead of with authn in the idp.
 
     Workspaces, channels, members, roles, permissions
 
@@ -36,9 +38,11 @@ Message Service:
 
 # Other containers
 
-## Backend for Frontend
+## Backend for Frontend (BFF)
 
 Aggregates responses from the services, validates the access tokens. 
+After validating the token, the BFF passes the user ID to the services in a header,
+the services trusts that header and dont validate the token again.
 Will have one for each user experience, so Web/Desktop + Mobile.
 
 **Not:** owns no data and no business logic.
