@@ -1,4 +1,4 @@
-# bizcord
+# Bizcord
 
 ## Chosen context
 
