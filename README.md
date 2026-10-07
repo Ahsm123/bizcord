@@ -10,6 +10,28 @@ if theres no workspace or channel to put them in. Channels are part of it since 
 Workspace also owns authz, since it keeps track of members and their roles. It doesnt store info about
 the members themselves, just what theyre allowed to do inside the workspace.
 
+## Folder structure
+
+```
+bizcord/
+├── src/
+│   ├── Bizcord.WorkspaceApi/     # the Workspace service
+│   ├── Bizcord.Contracts/        # DTOs shared with other services
+│   ├── Bizcord.Shared/           # events published/consumed over RabbitMQ
+│   └── Bizcord.MessageClient/    # RabbitMQ client wrapper
+├── tests/
+│   └── Bizcord.WorkspaceApi.Tests/
+├── docs/                         # diagrams and bounded contexts
+├── compose.yaml
+└── Bizcord.slnx
+```
+
+I use the standard .NET `src/` + `tests/` layout instead of one folder per service, so production code and
+tests are kept apart and everything builds from one solution file.
+
+The Dockerfile is at [src/Bizcord.WorkspaceApi/Dockerfile](src/Bizcord.WorkspaceApi/Dockerfile). It's built from the
+repo root (see `compose.yaml`), since it needs the shared projects in `src/` too.
+
 ## Diagrams
 
 - [C4 Level 2](./docs/c4-level2-container.drawio.svg)
