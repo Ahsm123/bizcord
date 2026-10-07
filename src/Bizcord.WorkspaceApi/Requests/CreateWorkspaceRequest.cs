@@ -1,3 +1,5 @@
-﻿namespace Bizcord.WorkspaceApi.Requests;
+﻿using System.ComponentModel.DataAnnotations;
 
-public record CreateWorkspaceRequest(string Name);
+namespace Bizcord.WorkspaceApi.Requests;
+
+public record CreateWorkspaceRequest([Required(AllowEmptyStrings = false), MaxLength(100)] string Name);
