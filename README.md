@@ -10,6 +10,10 @@ if theres no workspace or channel to put them in. Channels are part of it since 
 Workspace also owns authz, since it keeps track of members and their roles. It doesnt store info about
 the members themselves, just what theyre allowed to do inside the workspace.
 
+## Diagrams
+
+- [C4 Level 2](./docs/c4-level2-container.drawio.svg)
+
 ## Services
 
 What each service owns and doesnt own: [docs/bounded-contexts.md](docs/bounded-contexts.md).
