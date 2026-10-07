@@ -1,4 +1,5 @@
-﻿using Bizcord.WorkspaceApi.Models;
+﻿using Bizcord.Contracts.Workspaces;
+using Bizcord.WorkspaceApi.Models;
 
 namespace Bizcord.WorkspaceApi.Extensions;
 
@@ -15,13 +16,13 @@ public static class RoleExtensions
         Permission.CreateChannel,
     };
 
-    private static readonly Dictionary<Role, HashSet<Permission>> RolePermissions = new()
+    private static readonly Dictionary<MemberRole, HashSet<Permission>> RolePermissions = new()
     {
-        { Role.User, UserPermissions },
-        { Role.Admin, AdminPermissions }
+        { MemberRole.User, UserPermissions },
+        { MemberRole.Admin, AdminPermissions }
     };
 
-    public static bool HasPermission(this Role role, Permission permission)
+    public static bool HasPermission(this MemberRole role, Permission permission)
     {
         if (RolePermissions.TryGetValue(role, out var permissions))
         {

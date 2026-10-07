@@ -1,39 +1,7 @@
-﻿using Bizcord.WorkspaceApi.Extensions;
+﻿using Bizcord.Contracts.Workspaces;
+using Bizcord.WorkspaceApi.Extensions;
 
 namespace Bizcord.WorkspaceApi.Models;
-
-public enum AddMemberResult
-{
-    Ok,
-    CallerNotAMember,
-    NotAuthorized,
-    AlreadyMember
-}
-
-public enum RemoveMemberResult
-{
-    Ok,
-    CallerNotAMember,
-    NotAuthorized,
-    MemberNotFound,
-    LastAdmin
-}
-
-public enum CreateChannelResult
-{
-    Ok,
-    CallerNotAMember,
-    NotAuthorized,
-    DuplicateName
-}
-
-public enum RemoveChannelResult
-{
-    Ok,
-    CallerNotAMember,
-    NotAuthorized,
-    ChannelNotFound
-}
 
 public class Workspace
 {
@@ -56,7 +24,7 @@ public class Workspace
     public static Workspace Create(Guid ownerId, string name)
     {
         var workspace = new Workspace(Guid.NewGuid(), name);
-        workspace._members.Add(new Member { UserId = ownerId, Role = Role.Admin });
+        workspace._members.Add(new Member { UserId = ownerId, Role = MemberRole.Admin });
         return workspace;
     }
 
@@ -70,105 +38,101 @@ public class Workspace
         return workspace;
     }
 
-    public AddMemberResult AddMember(Guid actingUserId, Guid userId, Role newMemberRole)
+    public Result AddMember(Guid actingUserId, Guid userId, MemberRole newMemberRole)
     {
-        var actingUser = _members.FirstOrDefault(m => m.UserId == actingUserId);
-        if (actingUser == null)
+        var permission = newMemberRole == MemberRole.User ? Permission.AddMember : Permission.AddAdmin;
+        var authorized = Authorize(actingUserId, permission);
+        if (authorized.IsFailure)
         {
-            return AddMemberResult.CallerNotAMember;
-        }
-
-        if (!actingUser.Role.HasPermission(Permission.AddMember))
-        {
-            return AddMemberResult.NotAuthorized;
-        }
-
-        if (newMemberRole != Role.User && !actingUser.Role.HasPermission(Permission.AddAdmin))
-        {
-            return AddMemberResult.NotAuthorized;
+            return authorized;
         }
 
         if (_members.Any(m => m.UserId == userId))
         {
-            return AddMemberResult.AlreadyMember;
+            return Result.Failure(WorkspaceErrors.AlreadyMember);
         }
 
         var member = new Member() { UserId = userId, Role = newMemberRole };
         _members.Add(member);
-        return AddMemberResult.Ok;
+
+        return Result.Success();
     }
 
-    public RemoveMemberResult RemoveMember(Guid actingUserId, Guid memberId)
+    public Result RemoveMember(Guid actingUserId, Guid memberId)
     {
-        var actingUser = _members.FirstOrDefault(m => m.UserId == actingUserId);
-        if (actingUser == null)
+        var authorized = Authorize(actingUserId, Permission.RemoveMember);
+        if (authorized.IsFailure)
         {
-            return RemoveMemberResult.CallerNotAMember;
-        }
-
-        if (!actingUser.Role.HasPermission(Permission.RemoveMember))
-        {
-            return RemoveMemberResult.NotAuthorized;
+            return authorized;
         }
 
         var target = _members.FirstOrDefault(m => m.UserId == memberId);
         if (target is null)
         {
-            return RemoveMemberResult.MemberNotFound;
+            return Result.Failure(WorkspaceErrors.MemberNotFound);
         }
 
-        if (target.Role == Role.Admin && _members.Count(m => m.Role == Role.Admin) == 1)
+        if (target.Role == MemberRole.Admin && _members.Count(m => m.Role == MemberRole.Admin) == 1)
         {
-            return RemoveMemberResult.LastAdmin;
+            return Result.Failure(WorkspaceErrors.LastAdmin);
         }
 
         _members.Remove(target);
-        return RemoveMemberResult.Ok;
+
+        return Result.Success();
     }
 
-    public CreateChannelResult CreateChannel(Guid actingUserId, Guid channelId, string name)
+    public Result CreateChannel(Guid actingUserId, Guid channelId, string name)
     {
-        var actingUser = _members.FirstOrDefault(m => m.UserId == actingUserId);
-        if (actingUser == null)
+        var authorized = Authorize(actingUserId, Permission.CreateChannel);
+        if (authorized.IsFailure)
         {
-            return CreateChannelResult.CallerNotAMember;
-        }
-
-        if (!actingUser.Role.HasPermission(Permission.CreateChannel))
-        {
-            return CreateChannelResult.NotAuthorized;
+            return authorized;
         }
 
         if (_channels.Any(c => c.Name == name))
         {
-            return CreateChannelResult.DuplicateName;
+            return Result.Failure(WorkspaceErrors.DuplicateChannelName);
         }
 
         var channel = new Channel { Id = channelId, Name = name };
         _channels.Add(channel);
-        return CreateChannelResult.Ok;
+
+        return Result.Success();
     }
 
-    public RemoveChannelResult RemoveChannel(Guid actingUserId, Guid channelId)
+    public Result RemoveChannel(Guid actingUserId, Guid channelId)
     {
-        var actingUser = _members.FirstOrDefault(m => m.UserId == actingUserId);
-        if (actingUser == null)
+        var authorized = Authorize(actingUserId, Permission.DeleteChannel);
+        if (authorized.IsFailure)
         {
-            return RemoveChannelResult.CallerNotAMember;
-        }
-
-        if (!actingUser.Role.HasPermission(Permission.DeleteChannel))
-        {
-            return RemoveChannelResult.NotAuthorized;
+            return authorized;
         }
 
         var channel = _channels.FirstOrDefault(c => c.Id == channelId);
         if (channel is null)
         {
-            return RemoveChannelResult.ChannelNotFound;
+            return Result.Failure(WorkspaceErrors.ChannelNotFound);
         }
 
         _channels.Remove(channel);
-        return RemoveChannelResult.Ok;
+
+        return Result.Success();
+    }
+
+    private Result Authorize(Guid actingUserId, Permission permission)
+    {
+        var actingUser = _members.FirstOrDefault(m => m.UserId == actingUserId);
+        if (actingUser == null)
+        {
+            return Result.Failure(WorkspaceErrors.CallerNotAMember);
+        }
+
+        if (!actingUser.Role.HasPermission(permission))
+        {
+            return Result.Failure(WorkspaceErrors.NotAuthorized);
+        }
+
+        return Result.Success();
     }
 }
