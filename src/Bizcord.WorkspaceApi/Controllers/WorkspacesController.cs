@@ -16,11 +16,6 @@ public class WorkspacesController(IWorkspaceService workspaceService)
     public async Task<ActionResult<WorkspaceDto>> Create([FromHeader(Name = "X-User-Id")] Guid ownerId,
         CreateWorkspaceRequest request, CancellationToken ct)
     {
-        if (string.IsNullOrWhiteSpace(request.Name))
-        {
-            return BadRequest("Workspace needs a valid name");
-        }
-
         var workspace = await workspaceService.CreateAsync(ownerId, request.Name, ct);
         var dto = new WorkspaceDto(workspace.Id, workspace.Name);
         return CreatedAtAction(nameof(GetById), new { id = workspace.Id }, dto);
