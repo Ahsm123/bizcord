@@ -9,6 +9,7 @@
     <File Path="compose.yaml" />
   </Folder>
   <Folder Name="/tests/">
+    <Project Path="tests/Bizcord.MessageClient.Tests/Bizcord.MessageClient.Tests.csproj" />
     <Project Path="tests/Bizcord.WorkspaceApi.Tests/Bizcord.WorkspaceApi.Tests.csproj" />
   </Folder>
 </Solution>
