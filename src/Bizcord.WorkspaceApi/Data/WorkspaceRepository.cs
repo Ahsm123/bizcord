@@ -88,6 +88,8 @@ internal sealed class WorkspaceRepository(NpgsqlDataSource dataSource) : IWorksp
         await tx.CommitAsync(ct);
     }
 
+    // Read-only projection, so it skips loading members and channels for every workspace.
+    // Writes load the full aggregate through GetByIdAsync instead.
     public async Task<IReadOnlyList<WorkspaceDto>> ListForUserAsync(Guid userId, CancellationToken ct)
     {
         const string sql = """

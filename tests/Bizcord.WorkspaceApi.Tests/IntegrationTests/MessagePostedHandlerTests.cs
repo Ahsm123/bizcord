@@ -31,15 +31,14 @@ public class MessagePostedHandlerTests(WebApplicationFactory<Program> factory)
 
         var capture = new MessageCapture<ChannelActivityUpdatedEvent>(client);
 
-        await client.PublishAsync(new MessagePostedEvent
-        {
-            MessageId = messageId,
-            ChannelId = channelId,
-            AuthorId = Guid.NewGuid(),
-            Content = "Hello world",
+        await client.PublishAsync(new MessagePostedEvent(
+            MessageId: messageId,
+            ChannelId: channelId,
+            AuthorId: Guid.NewGuid(),
+            Content: "Hello world",
             // Ahead of the channel's initial now(), even if the container clock drifts a bit
-            PostedAt = DateTime.UtcNow.AddMinutes(1)
-        });
+            PostedAt: DateTime.UtcNow.AddMinutes(1)
+        ));
 
         var result = await capture.WaitForMessageAsync(TimeSpan.FromSeconds(5));
         Assert.Equal(messageId, result.MessageId);

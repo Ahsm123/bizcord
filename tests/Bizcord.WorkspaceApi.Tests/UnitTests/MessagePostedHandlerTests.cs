@@ -1,5 +1,6 @@
 using Bizcord.Shared.Events;
 using Bizcord.WorkspaceApi.Handlers;
+using Bizcord.WorkspaceApi.Services;
 using Xunit.Sdk;
 
 namespace Bizcord.WorkspaceApi.Tests;
@@ -11,16 +12,15 @@ public class MessagePostedHandlerTests
     {
         var messageId = Guid.NewGuid();
         var client = new FakeMessageClient();
-        var handler = new MessagePostedHandler(client, new FakeWorkspaceRepository());
+        var handler = new MessagePostedHandler(new WorkspaceService(new FakeWorkspaceRepository(), client));
 
-        await handler.Handle(new MessagePostedEvent
-        {
-            MessageId = messageId,
-            ChannelId = Guid.NewGuid(),
-            AuthorId = Guid.NewGuid(),
-            Content = "Test",
-            PostedAt = DateTime.UtcNow
-        }, CancellationToken.None);
+        await handler.Handle(new MessagePostedEvent(
+            MessageId: messageId,
+            ChannelId: Guid.NewGuid(),
+            AuthorId: Guid.NewGuid(),
+            Content: "Test",
+            PostedAt: DateTime.UtcNow
+        ), CancellationToken.None);
 
         var published = client.SinglePublished<ChannelActivityUpdatedEvent>();
         Assert.NotNull(published);
@@ -31,16 +31,15 @@ public class MessagePostedHandlerTests
     public async Task Handler_CanConsume_MinimumValidContract()
     {
         var client = new FakeMessageClient();
-        var handler = new MessagePostedHandler(client, new FakeWorkspaceRepository());
+        var handler = new MessagePostedHandler(new WorkspaceService(new FakeWorkspaceRepository(), client));
 
-        Func<Task> act = () => handler.Handle(new MessagePostedEvent
-        {
-            MessageId = Guid.NewGuid(),
-            ChannelId = Guid.NewGuid(),
-            AuthorId = Guid.NewGuid(),
-            Content = "Hello world",
-            PostedAt = DateTime.UtcNow
-        }, CancellationToken.None);
+        Func<Task> act = () => handler.Handle(new MessagePostedEvent(
+            MessageId: Guid.NewGuid(),
+            ChannelId: Guid.NewGuid(),
+            AuthorId: Guid.NewGuid(),
+            Content: "Hello world",
+            PostedAt: DateTime.UtcNow
+        ), CancellationToken.None);
 
         Assert.Null(await Record.ExceptionAsync(act));
         Assert.Equal(1, client.publishedMessages.Count);
@@ -51,16 +50,15 @@ public class MessagePostedHandlerTests
     {
         var postedAt = new DateTime(2026, 1, 1, 12, 0, 0, DateTimeKind.Utc);
         var client = new FakeMessageClient();
-        var handler = new MessagePostedHandler(client, new FakeWorkspaceRepository());
+        var handler = new MessagePostedHandler(new WorkspaceService(new FakeWorkspaceRepository(), client));
 
-        await handler.Handle(new MessagePostedEvent
-        {
-            MessageId = Guid.NewGuid(),
-            ChannelId = Guid.NewGuid(),
-            AuthorId = Guid.NewGuid(),
-            Content = "Test",
-            PostedAt = postedAt
-        }, CancellationToken.None);
+        await handler.Handle(new MessagePostedEvent(
+            MessageId: Guid.NewGuid(),
+            ChannelId: Guid.NewGuid(),
+            AuthorId: Guid.NewGuid(),
+            Content: "Test",
+            PostedAt: postedAt
+        ), CancellationToken.None);
 
         var published = client.SinglePublished<ChannelActivityUpdatedEvent>();
         Assert.Equal(postedAt, published.LastActivityAt);

@@ -1,3 +1,4 @@
+using Bizcord.WorkspaceApi.Extensions;
 using Bizcord.WorkspaceApi.Models;
 using Bizcord.WorkspaceApi.Requests;
 using Bizcord.WorkspaceApi.Services;
@@ -18,7 +19,7 @@ public class WorkspacesController(IWorkspaceService workspaceService)
         CreateWorkspaceRequest request, CancellationToken ct)
     {
         var workspace = await workspaceService.CreateAsync(ownerId, request.Name, ct);
-        var dto = new WorkspaceDto(workspace.Id, workspace.Name);
+        var dto = workspace.ToDto();
         return CreatedAtAction(nameof(GetById), new { id = workspace.Id }, dto);
     }
 
@@ -32,7 +33,7 @@ public class WorkspacesController(IWorkspaceService workspaceService)
             return NotFound();
         }
 
-        var dto = new WorkspaceDto(workspace.Id, workspace.Name);
+        var dto = workspace.ToDto();
         return Ok(dto);
     }
 

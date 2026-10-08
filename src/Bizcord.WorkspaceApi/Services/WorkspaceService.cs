@@ -1,10 +1,13 @@
+using Bizcord.MessageClient.Clients;
+using Bizcord.Shared.Events;
 using Bizcord.WorkspaceApi.Data;
 using Bizcord.WorkspaceApi.Models;
 using Bizcord.Contracts.Workspaces;
 
 namespace Bizcord.WorkspaceApi.Services;
 
-public class WorkspaceService(IWorkspaceRepository workspaceRepository) : IWorkspaceService
+public class WorkspaceService(IWorkspaceRepository workspaceRepository, IMessageClient messageClient)
+    : IWorkspaceService
 {
     public async Task<Workspace> CreateAsync(Guid ownerId, string name, CancellationToken ct)
     {
@@ -62,5 +65,17 @@ public class WorkspaceService(IWorkspaceRepository workspaceRepository) : IWorks
         await workspaceRepository.DeleteAsync(workspaceId, ct);
 
         return Result.Success();
+    }
+
+    public async Task RecordChannelActivityAsync(MessagePostedEvent message, CancellationToken ct)
+    {
+        var updated = await workspaceRepository.UpdateChannelLastActivityAsync(message.ChannelId, message.PostedAt, ct);
+        if (!updated)
+        {
+            return;
+        }
+
+        await messageClient.PublishAsync(
+            new ChannelActivityUpdatedEvent(message.MessageId, message.ChannelId, message.PostedAt), ct);
     }
 }
