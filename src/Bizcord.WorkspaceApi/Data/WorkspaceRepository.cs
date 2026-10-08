@@ -7,7 +7,7 @@ namespace Bizcord.WorkspaceApi.Data;
 
 internal sealed class WorkspaceRepository(NpgsqlDataSource dataSource) : IWorkspaceRepository
 {
-    public async Task<Workspace> GetByIdAsync(Guid id, CancellationToken ct = default)
+    public async Task<Workspace?> GetByIdAsync(Guid id, CancellationToken ct)
     {
         const string sql = """
                            select name from workspaces where id = @id;
@@ -20,13 +20,18 @@ internal sealed class WorkspaceRepository(NpgsqlDataSource dataSource) : IWorksp
             new CommandDefinition(sql, new { id }, cancellationToken: ct));
 
         var name = await results.ReadSingleOrDefaultAsync<string>();
+        if (name is null)
+        {
+            return null;
+        }
+
         var members = await results.ReadAsync<Member>();
         var channels = await results.ReadAsync<Channel>();
 
         return Workspace.Rehydrate(id, name, members, channels);
     }
 
-    public async Task SaveAsync(Workspace workspace, CancellationToken ct = default)
+    public async Task SaveAsync(Workspace workspace, CancellationToken ct)
     {
         await using var connection = await dataSource.OpenConnectionAsync(ct);
         await using var tx = await connection.BeginTransactionAsync(ct);
@@ -83,7 +88,7 @@ internal sealed class WorkspaceRepository(NpgsqlDataSource dataSource) : IWorksp
         await tx.CommitAsync(ct);
     }
 
-    public async Task<IReadOnlyList<WorkspaceDto>> ListForUserAsync(Guid userId, CancellationToken ct = default)
+    public async Task<IReadOnlyList<WorkspaceDto>> ListForUserAsync(Guid userId, CancellationToken ct)
     {
         const string sql = """
                            select w.id, w.name 
@@ -100,7 +105,7 @@ internal sealed class WorkspaceRepository(NpgsqlDataSource dataSource) : IWorksp
     }
 
     public async Task<bool> UpdateChannelLastActivityAsync(Guid channelId, DateTime postedAt,
-        CancellationToken ct = default)
+        CancellationToken ct)
     {
         const string sql = """
                            update channel_activity
@@ -111,6 +116,17 @@ internal sealed class WorkspaceRepository(NpgsqlDataSource dataSource) : IWorksp
         await using var connection = await dataSource.OpenConnectionAsync(ct);
         var rows = await connection.ExecuteAsync(new CommandDefinition(sql, new { channelId, postedAt },
             cancellationToken: ct));
+        return rows > 0;
+    }
+
+    public async Task<bool> DeleteAsync(Guid id, CancellationToken ct)
+    {
+        const string sql = """
+                           delete from workspaces where id = @id;
+                           """;
+
+        await using var connection = await dataSource.OpenConnectionAsync(ct);
+        var rows = await connection.ExecuteAsync(new CommandDefinition(sql, new { id }, cancellationToken: ct));
         return rows > 0;
     }
 }

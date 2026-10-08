@@ -29,12 +29,14 @@ public class WorkspaceService(IWorkspaceRepository workspaceRepository) : IWorks
     public async Task<Result> UpdateAsync(Guid actingUserId, Guid workspaceId, string newName, CancellationToken ct)
     {
         var workspace = await workspaceRepository.GetByIdAsync(workspaceId, ct);
-        if(workspace is null){
+        if(workspace is null)
+        {
             return Result.Failure(WorkspaceErrors.NotFound);
         }
 
         var result = workspace.Rename(actingUserId, newName);
-        if(result.IsFailure){
+        if(result.IsFailure)
+        {
             return result;
         }
 
@@ -43,4 +45,22 @@ public class WorkspaceService(IWorkspaceRepository workspaceRepository) : IWorks
         return Result.Success();
     }
 
+    public async Task<Result> DeleteAsync(Guid actingUserId, Guid workspaceId, CancellationToken ct)
+    {
+        var workspace = await workspaceRepository.GetByIdAsync(workspaceId, ct);
+        if(workspace is null)
+        {
+            return Result.Failure(WorkspaceErrors.NotFound);
+        }
+
+        var result = workspace.CanDelete(actingUserId);
+        if(result.IsFailure)
+        {
+            return result;
+        }
+
+        await workspaceRepository.DeleteAsync(workspaceId, ct);
+
+        return Result.Success();
+    }
 }

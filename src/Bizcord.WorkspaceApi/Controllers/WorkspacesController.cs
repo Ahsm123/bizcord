@@ -65,4 +65,26 @@ public class WorkspacesController(IWorkspaceService workspaceService)
 
         return StatusCode(StatusCodes.Status403Forbidden);
     }
+
+    [HttpDelete("{id:guid}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    public async Task<ActionResult> Delete([FromHeader(Name = "X-User-Id")] Guid userId, Guid id, 
+        CancellationToken ct)
+    {
+        var result = await workspaceService.DeleteAsync(userId, id, ct);
+        if (result.IsSuccess)
+        {
+            return NoContent();
+        }
+
+        
+        if (result.Error == WorkspaceErrors.NotFound)
+        {
+            return NotFound();
+        }
+
+        return StatusCode(StatusCodes.Status403Forbidden);
+    }
 }
