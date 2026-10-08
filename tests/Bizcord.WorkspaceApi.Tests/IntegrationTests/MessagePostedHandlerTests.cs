@@ -26,7 +26,7 @@ public class MessagePostedHandlerTests(WebApplicationFactory<Program> factory)
         workspace.CreateChannel(owner, channelId, "general");
         using (var scope = app.Services.CreateScope())
         {
-            await scope.ServiceProvider.GetRequiredService<IWorkspaceRepository>().SaveAsync(workspace);
+            await scope.ServiceProvider.GetRequiredService<IWorkspaceRepository>().SaveAsync(workspace, CancellationToken.None);
         }
 
         var capture = new MessageCapture<ChannelActivityUpdatedEvent>(client);

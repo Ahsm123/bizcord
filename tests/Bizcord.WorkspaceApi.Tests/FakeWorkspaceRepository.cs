@@ -8,23 +8,28 @@ public class FakeWorkspaceRepository : IWorkspaceRepository
 {
     public readonly List<(Guid ChannelId, DateTime PostedAt)> activityUpdates = new();
 
-    public Task<bool> UpdateChannelLastActivityAsync(Guid channelId, DateTime postedAt, CancellationToken ct = default)
+    public Task<bool> UpdateChannelLastActivityAsync(Guid channelId, DateTime postedAt, CancellationToken ct)
     {
         activityUpdates.Add((channelId, postedAt));
         return Task.FromResult(true);
     }
 
-    public Task<Workspace?> GetByIdAsync(Guid id, CancellationToken ct = default)
+    public Task<Workspace?> GetByIdAsync(Guid id, CancellationToken ct)
     {
         throw new NotImplementedException();
     }
 
-    public Task SaveAsync(Workspace workspace, CancellationToken ct = default)
+    public Task SaveAsync(Workspace workspace, CancellationToken ct)
     {
         throw new NotImplementedException();
     }
 
-    public Task<IReadOnlyList<WorkspaceDto>> ListForUserAsync(Guid userId, CancellationToken ct = default)
+    public Task<IReadOnlyList<WorkspaceDto>> ListForUserAsync(Guid userId, CancellationToken ct)
+    {
+        throw new NotImplementedException();
+    }
+
+    public Task<bool> DeleteAsync(Guid id, CancellationToken ct)
     {
         throw new NotImplementedException();
     }

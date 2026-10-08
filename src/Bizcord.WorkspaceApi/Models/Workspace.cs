@@ -38,6 +38,8 @@ public class Workspace
         return workspace;
     }
 
+    public Result CanDelete(Guid actingUserId) => Authorize(actingUserId, Permission.DeleteWorkspace);
+
     public Result AddMember(Guid actingUserId, Guid userId, MemberRole newMemberRole)
     {
         var permission = newMemberRole == MemberRole.User ? Permission.AddMember : Permission.AddAdmin;
