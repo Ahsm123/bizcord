@@ -16,8 +16,7 @@ the members themselves, just what theyre allowed to do inside the workspace.
 bizcord/
 ├── src/
 │   ├── Bizcord.WorkspaceApi/     # the Workspace service
-│   ├── Bizcord.Contracts/        # DTOs shared with other services
-│   ├── Bizcord.Shared/           # events published/consumed over RabbitMQ
+│   ├── Bizcord.Contracts/        # DTOs and events shared with other services
 │   └── Bizcord.MessageClient/    # RabbitMQ client wrapper
 ├── tests/
 │   └── Bizcord.WorkspaceApi.Tests/

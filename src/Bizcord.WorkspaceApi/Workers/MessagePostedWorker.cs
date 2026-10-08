@@ -1,6 +1,6 @@
 ﻿using Bizcord.MessageClient.Clients;
 using Bizcord.MessageClient.Handlers;
-using Bizcord.Shared.Events;
+using Bizcord.Contracts.Events;
 
 namespace Bizcord.WorkspaceApi.Workers;
 

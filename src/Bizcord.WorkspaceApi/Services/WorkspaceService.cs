@@ -1,5 +1,5 @@
 using Bizcord.MessageClient.Clients;
-using Bizcord.Shared.Events;
+using Bizcord.Contracts.Events;
 using Bizcord.WorkspaceApi.Data;
 using Bizcord.WorkspaceApi.Models;
 using Bizcord.Contracts.Workspaces;

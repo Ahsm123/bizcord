@@ -1,4 +1,4 @@
-﻿namespace Bizcord.Shared.Events;
+﻿namespace Bizcord.Contracts.Events;
 
 public record MessagePostedEvent
 (

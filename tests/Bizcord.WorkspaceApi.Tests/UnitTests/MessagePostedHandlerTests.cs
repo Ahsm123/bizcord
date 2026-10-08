@@ -1,4 +1,4 @@
-using Bizcord.Shared.Events;
+using Bizcord.Contracts.Events;
 using Bizcord.WorkspaceApi.Handlers;
 using Bizcord.WorkspaceApi.Services;
 using Xunit.Sdk;

@@ -1,7 +1,6 @@
 <Solution>
   <Folder Name="/src/">
     <Project Path="src/Bizcord.MessageClient/Bizcord.MessageClient.csproj" />
-    <Project Path="src/Bizcord.Shared/Bizcord.Shared.csproj" />
     <Project Path="src/Bizcord.WorkspaceApi/Bizcord.WorkspaceApi.csproj" />
     <Project Path="src\Bizcord.Contracts\Bizcord.Contracts.csproj" />
   </Folder>
