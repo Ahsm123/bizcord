@@ -54,17 +54,7 @@ public class WorkspacesController(IWorkspaceService workspaceService)
         UpdateWorkspaceRequest request, CancellationToken ct)
     {
         var result = await workspaceService.UpdateAsync(userId, id, request.Name, ct);
-        if (result.IsSuccess)
-        {
-            return NoContent();
-        }
-
-        if (result.Error == WorkspaceErrors.NotFound)
-        {
-            return NotFound();
-        }
-
-        return StatusCode(StatusCodes.Status403Forbidden);
+        return result.ToActionResult();
     }
 
     [HttpDelete("{id:guid}")]
@@ -75,17 +65,6 @@ public class WorkspacesController(IWorkspaceService workspaceService)
         CancellationToken ct)
     {
         var result = await workspaceService.DeleteAsync(userId, id, ct);
-        if (result.IsSuccess)
-        {
-            return NoContent();
-        }
-
-        
-        if (result.Error == WorkspaceErrors.NotFound)
-        {
-            return NotFound();
-        }
-
-        return StatusCode(StatusCodes.Status403Forbidden);
+        return result.ToActionResult();
     }
 }
