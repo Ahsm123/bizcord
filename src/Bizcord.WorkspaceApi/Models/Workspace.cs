@@ -120,6 +120,19 @@ public class Workspace
         return Result.Success();
     }
 
+    public Result Rename(Guid actingUserId, string newName)
+    {
+        var authorized = Authorize(actingUserId, Permission.UpdateWorkspace);
+        if (authorized.IsFailure)
+        {
+            return authorized;
+        }
+
+        Name = newName;
+        return Result.Success();
+
+    }
+
     private Result Authorize(Guid actingUserId, Permission permission)
     {
         var actingUser = _members.FirstOrDefault(m => m.UserId == actingUserId);

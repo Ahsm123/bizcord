@@ -8,4 +8,5 @@ public enum Permission
     AddMember,
     AddAdmin,
     RemoveAdmin,
+    UpdateWorkspace
 }
