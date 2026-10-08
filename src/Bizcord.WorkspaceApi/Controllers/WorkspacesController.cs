@@ -1,3 +1,4 @@
+using Bizcord.WorkspaceApi.Models;
 using Bizcord.WorkspaceApi.Requests;
 using Bizcord.WorkspaceApi.Services;
 using Bizcord.Contracts.Workspaces;
@@ -41,5 +42,27 @@ public class WorkspacesController(IWorkspaceService workspaceService)
     {
         var userWorkspaces = await workspaceService.GetAllAsync(userId, ct);
         return Ok(userWorkspaces);
+    }
+
+    [HttpPut("{id:guid}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    public async Task<ActionResult> Update([FromHeader(Name = "X-User-Id")] Guid userId, Guid id,
+        UpdateWorkspaceRequest request, CancellationToken ct)
+    {
+        var result = await workspaceService.UpdateAsync(userId, id, request.Name, ct);
+        if (result.IsSuccess)
+        {
+            return NoContent();
+        }
+
+        if (result.Error == WorkspaceErrors.NotFound)
+        {
+            return NotFound();
+        }
+
+        return StatusCode(StatusCodes.Status403Forbidden);
     }
 }

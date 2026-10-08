@@ -25,4 +25,22 @@ public class WorkspaceService(IWorkspaceRepository workspaceRepository) : IWorks
     {
         return await workspaceRepository.ListForUserAsync(userId, ct);
     }
+
+    public async Task<Result> UpdateAsync(Guid actingUserId, Guid workspaceId, string newName, CancellationToken ct)
+    {
+        var workspace = await workspaceRepository.GetByIdAsync(workspaceId, ct);
+        if(workspace is null){
+            return Result.Failure(WorkspaceErrors.NotFound);
+        }
+
+        var result = workspace.Rename(actingUserId, newName);
+        if(result.IsFailure){
+            return result;
+        }
+
+        await workspaceRepository.SaveAsync(workspace, ct);
+
+        return Result.Success();
+    }
+
 }

@@ -14,6 +14,7 @@ public static class RoleExtensions
         Permission.RemoveMember,
         Permission.DeleteChannel,
         Permission.CreateChannel,
+        Permission.UpdateWorkspace
     };
 
     private static readonly Dictionary<MemberRole, HashSet<Permission>> RolePermissions = new()
