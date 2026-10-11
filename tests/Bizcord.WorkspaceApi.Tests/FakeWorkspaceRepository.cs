@@ -7,11 +7,12 @@ namespace Bizcord.WorkspaceApi.Tests;
 public class FakeWorkspaceRepository : IWorkspaceRepository
 {
     public readonly List<(Guid ChannelId, DateTime PostedAt)> activityUpdates = new();
+    public bool updateResult = true;
 
     public Task<bool> UpdateChannelLastActivityAsync(Guid channelId, DateTime postedAt, CancellationToken ct)
     {
         activityUpdates.Add((channelId, postedAt));
-        return Task.FromResult(true);
+        return Task.FromResult(updateResult);
     }
 
     public Task<Workspace?> GetByIdAsync(Guid id, CancellationToken ct)
