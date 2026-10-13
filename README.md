@@ -53,6 +53,8 @@ What each service owns and doesnt own: [docs/bounded-contexts.md](docs/bounded-c
 | POST   | api/v1/workspaces      | `X-User-Id` |
 | GET    | api/v1/workspaces      | `X-User-Id` |
 | GET    | api/v1/workspaces/{id} |             |
+| PUT    | api/v1/workspaces/{id} | `X-User-Id` |
+| DELETE | api/v1/workspaces/{id} | `X-User-Id` |
 
 ## Ports
 
