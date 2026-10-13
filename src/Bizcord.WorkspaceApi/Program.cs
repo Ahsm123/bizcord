@@ -15,6 +15,20 @@ var builder = WebApplication.CreateBuilder(args);
 // Data
 var connectionString = builder.Configuration.GetConnectionString("Database")
                        ?? throw new InvalidOperationException("Missing ConnectionStrings:Database");
+
+// The migrator only needs the database, so it runs before any services that need other config, like RabbitMQ
+if (args.Contains("migrate"))
+{
+    var upgrade = DeployChanges.To
+        .PostgresqlDatabase(connectionString)
+        .WithScriptsEmbeddedInAssembly(Assembly.GetExecutingAssembly())
+        .LogToConsole()
+        .Build()
+        .PerformUpgrade();
+
+    return upgrade.Successful ? 0 : 1;
+}
+
 builder.Services.AddSingleton(_ => NpgsqlDataSource.Create(connectionString));
 builder.Services.AddScoped<IWorkspaceRepository, WorkspaceRepository>();
 
@@ -32,18 +46,6 @@ builder.Services.AddControllers();
 builder.Services.AddOpenApi();
 
 var app = builder.Build();
-
-if (args.Contains("migrate"))
-{
-    var upgrade = DeployChanges.To
-        .PostgresqlDatabase(connectionString)
-        .WithScriptsEmbeddedInAssembly(Assembly.GetExecutingAssembly())
-        .LogToConsole()
-        .Build()
-        .PerformUpgrade();
-
-    return upgrade.Successful ? 0 : 1;
-}
 
 if (app.Environment.IsDevelopment())
 {
