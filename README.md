@@ -72,7 +72,7 @@ What each service owns and doesnt own: [docs/bounded-contexts.md](docs/bounded-c
 5. "gh issue develop N --checkout" to checkout a branch
 6. When issue is done:
    - git add .
-   - write correct commit message e.g.: "fix: update workspace controller to fix.."
+   - write correct commit message e.g.: "fix: update workspace controller to fix X #N" - tag the issue
    - git push
 7. "gh pr create --fill --body "Closes #N"" - important to tag the issue to auto close it with the #
 8. "gh pr merge --squash --delete-branch" - so the branch is squash merged and deleted correctly
