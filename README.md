@@ -61,3 +61,19 @@ What each service owns and doesnt own: [docs/bounded-contexts.md](docs/bounded-c
 | workspace-api | 5001                     |
 | workspace-db  | 5433                     |
 | rabbitmq      | 5672, 15672 (management) |
+
+
+## Collaboration
+
+1. Add an issue e.g.: "update controller method to handle missing ..."
+2. Write short list of requirements / why this needs to be changed
+3. From terminal: "gh issue list" to see open issue
+4. "gh issue edit N --add-assignee @me" where N is the issue number from the list with the #.
+5. "gh issue develop N --checkout" to checkout a branch
+6. When issue is done:
+   - git add .
+   - write correct commit message e.g.: "fix: update workspace controller to fix.."
+   - git push
+7. "gh pr create --fill --body "Closes #N"" - important to tag the issue to auto close it with the #
+8. "gh pr merge --squash --delete-branch" - so the branch is squash merged and deleted correctly
+9. "git switch main && git pull --prune" make sure to switch back and clean up
