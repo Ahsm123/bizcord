@@ -1,35 +1,34 @@
 # Bizcord
 
-## Chosen context
+## Context
 
-**Im working on Workspace, which includes Channels.**
+This repository contains the **Workspace** service, which also covers **Channels**.
 
-I picked Workspace because the other services depend on it. You cant have messages or reactions
-if theres no workspace or channel to put them in. Channels are part of it since they only exist inside a workspace.
-
-Workspace also owns authz, since it keeps track of members and their roles. It doesnt store info about
-the members themselves, just what theyre allowed to do inside the workspace.
+- Workspace is upstream of the other services. Messages and reactions need a workspace and a channel to exist in.
+- Channels exist only inside a workspace, so they belong to the same context.
+- Workspace owns authorization. It stores memberships and roles (what a user may do in a workspace), not user profile data.
 
 ## Folder structure
 
 ```
 bizcord/
 ├── src/
-│   ├── Bizcord.WorkspaceApi/     # the Workspace service
+│   ├── Bizcord.WorkspaceApi/     # Workspace service
 │   ├── Bizcord.Contracts/        # DTOs and events shared with other services
 │   └── Bizcord.MessageClient/    # RabbitMQ client wrapper
 ├── tests/
-│   └── Bizcord.WorkspaceApi.Tests/
+│   ├── Bizcord.WorkspaceApi.Tests/
+│   └── Bizcord.MessageClient.Tests/
 ├── docs/                         # diagrams and bounded contexts
 ├── compose.yaml
 └── Bizcord.slnx
 ```
 
-I use the standard .NET `src/` + `tests/` layout instead of one folder per service, so production code and
-tests are kept apart and everything builds from one solution file.
+The repo uses the standard .NET `src/` + `tests/` layout instead of one folder per service. Production code and tests stay
+separate, and everything builds from one solution file.
 
-The Dockerfile is at [src/Bizcord.WorkspaceApi/Dockerfile](src/Bizcord.WorkspaceApi/Dockerfile). It's built from the
-repo root (see `compose.yaml`), since it needs the shared projects in `src/` too.
+The [Dockerfile](src/Bizcord.WorkspaceApi/Dockerfile) is built from the repo root (see `compose.yaml`) because it needs the
+shared projects in `src/`.
 
 ## Diagrams
 
@@ -37,14 +36,14 @@ repo root (see `compose.yaml`), since it needs the shared projects in `src/` too
 
 ## Services
 
-What each service owns and doesnt own: [docs/bounded-contexts.md](docs/bounded-contexts.md).
+What each service owns and does not own: [docs/bounded-contexts.md](docs/bounded-contexts.md).
 
 ## Events
 
 | Event                       | Publisher    | Consumers                                                               | Payload                                                 |
 |-----------------------------|--------------|-------------------------------------------------------------------------|---------------------------------------------------------|
 | MessagePostedEvent          | MessageApi   | `WorkspaceApi`, `Realtime Gateway (planned)`, `Notifications (planned)` | `MessageId` `ChannelId` `AuthorId` `Content` `PostedAt` |
-| ChannelActivityUpdatedEvent | WorkspaceApi | `Realtime Gateway (planned)`                                            | `MessageId` `ChannelId` `LastActivityAt`                |        
+| ChannelActivityUpdatedEvent | WorkspaceApi | `Realtime Gateway (planned)`                                            | `MessageId` `ChannelId` `LastActivityAt`                |
 
 ## REST overview
 
@@ -58,7 +57,7 @@ What each service owns and doesnt own: [docs/bounded-contexts.md](docs/bounded-c
 
 ## Ports
 
-| Service       | Host-port                |
+| Service       | Host port                |
 |---------------|--------------------------|
 | workspace-api | 5001                     |
 | workspace-db  | 5433                     |
