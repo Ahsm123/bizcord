@@ -13,10 +13,22 @@ Wrapper around RabbitMQ with EasyNetQ, so services dont talk to the broker direc
 ## Setup
 
 ```csharp
-builder.Services.AddMessaging(builder.Configuration);
+builder.Services.AddMessaging(builder.Configuration, Assembly.GetExecutingAssembly());
 ```
 
 Uses the connection string `ConnectionStrings:Messaging`
+
+## Handling messages
+
+Implement `IMessageHandler<T>` in the assembly passed to `AddMessaging`. Nothing else needs registering:
+
+- every `IMessageHandler<T>` in the assembly is found with reflection and registered as scoped
+- one `MessageHandlerWorker<T>` is started per message type. It subscribes and passes each message to the handlers
+  for `T` in a new scope
+
+The subscriber id is `<assembly name>.<message name>`, e.g. `Bizcord.WorkspaceApi.MessagePostedEvent`. EasyNetQ names
+the queue after it, so all instances of a service share one queue per message type and each service gets its own.
+Renaming the assembly or the message type gives a new queue.
 
 ## Swapping broker
 
