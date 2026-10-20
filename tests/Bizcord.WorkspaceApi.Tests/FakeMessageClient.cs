@@ -12,9 +12,10 @@ public class FakeMessageClient() : IMessageClient
         return Task.CompletedTask;
     }
 
+    // No-op, so hosted workers can start without a broker when the API runs in tests
     public Task SubscribeAsync<T>(string subscriberId, Func<T, Task> handler, CancellationToken ct = default)
     {
-        throw new NotImplementedException();
+        return Task.CompletedTask;
     }
 
     public Task UnsubscribeAsync(string subscriberId, CancellationToken ct = default)

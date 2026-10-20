@@ -6,6 +6,7 @@ namespace Bizcord.WorkspaceApi.Tests;
 
 public class FakeWorkspaceRepository : IWorkspaceRepository
 {
+    public readonly Dictionary<Guid, Workspace> workspaces = new();
     public readonly List<(Guid ChannelId, DateTime PostedAt)> activityUpdates = new();
     public bool updateResult = true;
 
@@ -17,21 +18,26 @@ public class FakeWorkspaceRepository : IWorkspaceRepository
 
     public Task<Workspace?> GetByIdAsync(Guid id, CancellationToken ct)
     {
-        throw new NotImplementedException();
+        return Task.FromResult(workspaces.GetValueOrDefault(id));
     }
 
     public Task SaveAsync(Workspace workspace, CancellationToken ct)
     {
-        throw new NotImplementedException();
+        workspaces[workspace.Id] = workspace;
+        return Task.CompletedTask;
     }
 
     public Task<IReadOnlyList<WorkspaceDto>> ListForUserAsync(Guid userId, CancellationToken ct)
     {
-        throw new NotImplementedException();
+        IReadOnlyList<WorkspaceDto> result = workspaces.Values
+            .Where(w => w.Members.Any(m => m.UserId == userId))
+            .Select(w => new WorkspaceDto(w.Id, w.Name))
+            .ToList();
+        return Task.FromResult(result);
     }
 
     public Task<bool> DeleteAsync(Guid id, CancellationToken ct)
     {
-        throw new NotImplementedException();
+        return Task.FromResult(workspaces.Remove(id));
     }
 }
