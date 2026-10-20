@@ -50,4 +50,35 @@ public class WorkspaceTests
         Assert.Equal(WorkspaceErrors.NotAuthorized, result.Error);
         Assert.Equal("test", _workspace.Name);
     }
+
+    [Fact]
+    public void CreateChannel_Admin_AddsChannel()
+    {
+        var channelId = Guid.NewGuid();
+
+        var result = _workspace.CreateChannel(_admin, channelId, "general");
+
+        Assert.True(result.IsSuccess);
+        Assert.Contains(_workspace.Channels, c => c.Id == channelId && c.Name == "general");
+    }
+
+    [Fact]
+    public void CreateChannel_User_IsNotAuthorized_AndAddsNothing()
+    {
+        var result = _workspace.CreateChannel(_user, Guid.NewGuid(), "general");
+
+        Assert.Equal(WorkspaceErrors.NotAuthorized, result.Error);
+        Assert.Empty(_workspace.Channels);
+    }
+
+    [Fact]
+    public void CreateChannel_TakenName_IsDuplicateChannelName()
+    {
+        _workspace.CreateChannel(_admin, Guid.NewGuid(), "general");
+
+        var result = _workspace.CreateChannel(_admin, Guid.NewGuid(), "general");
+
+        Assert.Equal(WorkspaceErrors.DuplicateChannelName, result.Error);
+        Assert.Single(_workspace.Channels);
+    }
 }

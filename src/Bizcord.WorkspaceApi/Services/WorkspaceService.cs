@@ -67,6 +67,28 @@ public class WorkspaceService(IWorkspaceRepository workspaceRepository, IMessage
         return Result.Success();
     }
 
+    public async Task<Result<Channel>> CreateChannelAsync(Guid actingUserId, Guid workspaceId, string name,
+        CancellationToken ct)
+    {
+        var workspace = await workspaceRepository.GetByIdAsync(workspaceId, ct);
+        if (workspace is null)
+        {
+            return Result<Channel>.Failure(WorkspaceErrors.NotFound);
+        }
+
+        var channelId = Guid.NewGuid();
+        var result = workspace.CreateChannel(actingUserId, channelId, name);
+        if (result.IsFailure)
+        {
+            return Result<Channel>.Failure(result.Error);
+        }
+
+        // Saving also creates the channel's channel_activity row, so MessagePostedEvents for it get recorded
+        await workspaceRepository.SaveAsync(workspace, ct);
+
+        return Result<Channel>.Success(workspace.Channels.Single(c => c.Id == channelId));
+    }
+
     public async Task RecordChannelActivityAsync(MessagePostedEvent message, CancellationToken ct)
     {
         var updated = await workspaceRepository.UpdateChannelLastActivityAsync(message.ChannelId, message.PostedAt, ct);
