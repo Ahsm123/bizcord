@@ -19,7 +19,7 @@ bizcord/
 ├── tests/
 │   ├── Bizcord.WorkspaceApi.Tests/
 │   └── Bizcord.MessageClient.Tests/
-├── docs/                         # diagrams and bounded contexts
+├── docs/                         # diagrams, bounded contexts, events and REST API
 ├── compose.yaml
 └── Bizcord.slnx
 ```
@@ -38,22 +38,12 @@ shared projects in `src/`.
 
 What each service owns and does not own: [docs/bounded-contexts.md](docs/bounded-contexts.md).
 
-## Events
+## Interactions
 
-| Event                       | Publisher    | Consumers                                                               | Payload                                                 |
-|-----------------------------|--------------|-------------------------------------------------------------------------|---------------------------------------------------------|
-| MessagePostedEvent          | MessageApi   | `WorkspaceApi`, `Realtime Gateway (planned)`, `Notifications (planned)` | `MessageId` `ChannelId` `AuthorId` `Content` `PostedAt` |
-| ChannelActivityUpdatedEvent | WorkspaceApi | `Realtime Gateway (planned)`                                            | `MessageId` `ChannelId` `LastActivityAt`                |
+How the services talk to each other:
 
-## REST overview
-
-| Method | Endpoint               | Header      |
-|--------|------------------------|-------------|
-| POST   | api/v1/workspaces      | `X-User-Id` |
-| GET    | api/v1/workspaces      | `X-User-Id` |
-| GET    | api/v1/workspaces/{id} |             |
-| PUT    | api/v1/workspaces/{id} | `X-User-Id` |
-| DELETE | api/v1/workspaces/{id} | `X-User-Id` |
+- [Events](docs/events.md): which events each service publishes and consumes
+- [REST API](docs/rest-api.md): endpoints and the `X-User-Id` header
 
 ## Ports
 
