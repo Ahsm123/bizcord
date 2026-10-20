@@ -2,6 +2,7 @@ using Bizcord.MessageClient.Clients;
 using Bizcord.Contracts.Events;
 using Bizcord.WorkspaceApi.Data;
 using Bizcord.WorkspaceApi.Models;
+using EasyNetQ;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.DependencyInjection;
@@ -29,7 +30,8 @@ public class MessagePostedHandlerTests(WebApplicationFactory<Program> factory)
             await scope.ServiceProvider.GetRequiredService<IWorkspaceRepository>().SaveAsync(workspace, CancellationToken.None);
         }
 
-        var capture = new MessageCapture<ChannelActivityUpdatedEvent>(client);
+        await using var capture =
+            await MessageCapture<ChannelActivityUpdatedEvent>.StartAsync(app.Services.GetRequiredService<IBus>());
 
         await client.PublishAsync(new MessagePostedEvent(
             MessageId: messageId,
