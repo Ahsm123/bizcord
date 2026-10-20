@@ -15,7 +15,7 @@ public class WorkspacesController(IWorkspaceService workspaceService)
     [HttpPost]
     [ProducesResponseType(StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<ActionResult<WorkspaceDto>> Create([FromHeader(Name = "X-User-Id")] Guid ownerId,
+    public async Task<ActionResult<WorkspaceDto>> Create([FromUserIdHeader] Guid ownerId,
         CreateWorkspaceRequest request, CancellationToken ct)
     {
         var workspace = await workspaceService.CreateAsync(ownerId, request.Name, ct);
@@ -38,7 +38,8 @@ public class WorkspacesController(IWorkspaceService workspaceService)
     }
 
     [HttpGet]
-    public async Task<ActionResult<IReadOnlyList<WorkspaceDto>>> GetAll([FromHeader(Name = "X-User-Id")] Guid userId,
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<ActionResult<IReadOnlyList<WorkspaceDto>>> GetAll([FromUserIdHeader] Guid userId,
         CancellationToken ct)
     {
         var userWorkspaces = await workspaceService.GetAllAsync(userId, ct);
@@ -50,7 +51,7 @@ public class WorkspacesController(IWorkspaceService workspaceService)
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
-    public async Task<ActionResult> Update([FromHeader(Name = "X-User-Id")] Guid userId, Guid id,
+    public async Task<ActionResult> Update([FromUserIdHeader] Guid userId, Guid id,
         UpdateWorkspaceRequest request, CancellationToken ct)
     {
         var result = await workspaceService.UpdateAsync(userId, id, request.Name, ct);
@@ -60,8 +61,9 @@ public class WorkspacesController(IWorkspaceService workspaceService)
     [HttpDelete("{id:guid}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
-    public async Task<ActionResult> Delete([FromHeader(Name = "X-User-Id")] Guid userId, Guid id, 
+    public async Task<ActionResult> Delete([FromUserIdHeader] Guid userId, Guid id, 
         CancellationToken ct)
     {
         var result = await workspaceService.DeleteAsync(userId, id, ct);
