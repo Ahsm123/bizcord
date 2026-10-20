@@ -1,11 +1,7 @@
 using System.Reflection;
 using Bizcord.MessageClient;
-using Bizcord.MessageClient.Handlers;
-using Bizcord.Contracts.Events;
-using Bizcord.WorkspaceApi.Handlers;
 using Bizcord.WorkspaceApi.Data;
 using Bizcord.WorkspaceApi.Services;
-using Bizcord.WorkspaceApi.Workers;
 using DbUp;
 using Npgsql;
 using Scalar.AspNetCore;
@@ -35,12 +31,8 @@ builder.Services.AddScoped<IWorkspaceRepository, WorkspaceRepository>();
 // Services
 builder.Services.AddScoped<IWorkspaceService, WorkspaceService>();
 
-// Messaging
-builder.Services.AddScoped<IMessageHandler<MessagePostedEvent>, MessagePostedHandler>();
-builder.Services.AddMessaging(builder.Configuration);
-
-// Workers
-builder.Services.AddHostedService<MessagePostedWorker>();
+// Messaging: registers every IMessageHandler<T> in this assembly and subscribes a worker for each message type
+builder.Services.AddMessaging(builder.Configuration, Assembly.GetExecutingAssembly());
 
 builder.Services.AddControllers();
 builder.Services.AddOpenApi();
