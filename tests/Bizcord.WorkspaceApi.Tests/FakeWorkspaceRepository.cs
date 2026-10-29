@@ -9,6 +9,7 @@ public class FakeWorkspaceRepository : IWorkspaceRepository
     public readonly Dictionary<Guid, Workspace> workspaces = new();
     public readonly List<(Guid ChannelId, DateTime PostedAt)> activityUpdates = new();
     public bool updateResult = true;
+    public bool hang;
 
     public Task<bool> UpdateChannelLastActivityAsync(Guid channelId, DateTime postedAt, CancellationToken ct)
     {
@@ -16,9 +17,15 @@ public class FakeWorkspaceRepository : IWorkspaceRepository
         return Task.FromResult(updateResult);
     }
 
-    public Task<Workspace?> GetByIdAsync(Guid id, CancellationToken ct)
+    public async Task<Workspace?> GetByIdAsync(Guid id, CancellationToken ct)
     {
-        return Task.FromResult(workspaces.GetValueOrDefault(id));
+        // Simulates a Postgres that never responds, until the request timeout cancels ct
+        if (hang)
+        {
+            await Task.Delay(Timeout.Infinite, ct);
+        }
+
+        return workspaces.GetValueOrDefault(id);
     }
 
     public Task SaveAsync(Workspace workspace, CancellationToken ct)
