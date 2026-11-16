@@ -38,14 +38,21 @@ Message Service:
 
 # Other containers
 
+## API Gateway
+
+The single entry point for clients. Routes each request to the right service and validates the access token.
+After validating the token, the gateway passes the user ID to the services in a X-User-Id header, taken from the token's `sub` claim.
+The services trust that header and don't validate the token again, which is only safe when services are only reachable through the gateway.
+In development the gateway also has a faucet that issues tokens, as a stand-in for the idp.
+
+**Not:** owns no data and no business logic, and doesn't decide what a user may do in a workspace (Workspace does).
+
 ## Backend for Frontend (BFF)
 
-Aggregates responses from the services, validates the access tokens. 
-After validating the token, the BFF passes the user ID to the services in a X-User-Id header,
-the services trust that header and doesnt validate the token again, only safe because services are only reachable through the BFF.
+Aggregates responses from the services.
 Will have one for each user experience, so Web/Desktop + Mobile.
 
-**Not:** owns no data and no business logic.
+**Not:** owns no data and no business logic. Doesn't validate tokens, the API Gateway does.
 
 ## Realtime Gateway
 

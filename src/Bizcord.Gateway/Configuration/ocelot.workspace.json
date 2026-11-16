@@ -1,0 +1,128 @@
+{
+  "Routes": [
+    {
+      "Key": "workspaces-read",
+      "UpstreamPathTemplate": "/api/v1/workspaces",
+      "UpstreamHttpMethod": ["GET"],
+      "DownstreamPathTemplate": "/api/v1/workspaces",
+      "DownstreamScheme": "http",
+      "AuthenticationOptions": {
+        "AuthenticationProviderKeys": ["Bearer"],
+        "AllowedScopes": ["workspace.read"]
+      },
+      "AddHeadersToRequest": {
+        "X-User-Id": "Claims[sub] > value"
+      },
+      "Priority": 2,
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "workspace-api",
+          "Port": 8080
+        }
+      ]
+    },
+    {
+      "Key": "workspaces-write",
+      "UpstreamPathTemplate": "/api/v1/workspaces",
+      "UpstreamHttpMethod": ["POST"],
+      "DownstreamPathTemplate": "/api/v1/workspaces",
+      "DownstreamScheme": "http",
+      "AuthenticationOptions": {
+        "AuthenticationProviderKeys": ["Bearer"],
+        "AllowedScopes": ["workspace.write"]
+      },
+      "AddHeadersToRequest": {
+        "X-User-Id": "Claims[sub] > value"
+      },
+      "Priority": 2,
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "workspace-api",
+          "Port": 8080
+        }
+      ]
+    },
+    {
+      "Key": "workspace-by-id-write",
+      "UpstreamPathTemplate": "/api/v1/workspaces/{id}",
+      "UpstreamHttpMethod": ["PUT", "DELETE"],
+      "AuthenticationOptions": {
+        "AuthenticationProviderKeys": ["Bearer"],
+        "AllowedScopes": ["workspace.write"]
+      },
+      "AddHeadersToRequest": {
+        "X-User-Id": "Claims[sub] > value"
+      },
+      "DownstreamPathTemplate": "/api/v1/workspaces/{id}",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "workspace-api",
+          "Port": 8080
+        }
+      ]
+    },
+    {
+      "Key": "workspace-by-id-read",
+      "UpstreamPathTemplate": "/api/v1/workspaces/{id}",
+      "UpstreamHttpMethod": ["GET"],
+      "AuthenticationOptions": {
+        "AuthenticationProviderKeys": ["Bearer"],
+        "AllowedScopes": ["workspace.read"]
+      },
+      "AddHeadersToRequest": {
+        "X-User-Id": "Claims[sub] > value"
+      },
+      "DownstreamPathTemplate": "/api/v1/workspaces/{id}",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "workspace-api",
+          "Port": 8080
+        }
+      ]
+    },
+    {
+      "Key": "workspace-channels-read",
+      "UpstreamPathTemplate": "/api/v1/workspaces/{workspaceId}/channels",
+      "UpstreamHttpMethod": ["GET"],
+      "AuthenticationOptions": {
+        "AuthenticationProviderKeys": ["Bearer"],
+        "AllowedScopes": ["channel.read"]
+      },
+      "AddHeadersToRequest": {
+        "X-User-Id": "Claims[sub] > value"
+      },
+      "Priority": 2,
+      "DownstreamPathTemplate": "/api/v1/workspaces/{workspaceId}/channels",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "workspace-api",
+          "Port": 8080
+        }
+      ]
+    },
+    {
+      "Key": "workspace-channels-write",
+      "UpstreamPathTemplate": "/api/v1/workspaces/{workspaceId}/channels",
+      "UpstreamHttpMethod": ["POST"],
+      "AuthenticationOptions": {
+        "AuthenticationProviderKeys": ["Bearer"],
+        "AllowedScopes": ["channel.write"]
+      },
+      "AddHeadersToRequest": {
+        "X-User-Id": "Claims[sub] > value"
+      },
+      "Priority": 2,
+      "DownstreamPathTemplate": "/api/v1/workspaces/{workspaceId}/channels",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "workspace-api",
+          "Port": 8080
+        }
+      ]
+    }
+  ]
+}

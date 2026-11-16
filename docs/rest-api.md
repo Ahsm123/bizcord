@@ -1,9 +1,30 @@
 # REST API
 
-Clients reach the services through the BFF. It validates the access token and passes the user id on in the
-`X-User-Id` header (see [bounded-contexts.md](bounded-contexts.md)). A missing or empty `X-User-Id` returns 400.
+Clients reach the services through the gateway on port 8080. It validates the access token and sets the
+`X-User-Id` header from the token's `sub` claim (see [bounded-contexts.md](bounded-contexts.md)).
+
+## Gateway
+
+Same paths as WorkspaceApi. No token or an invalid token returns 401, a token without the scope returns 403.
+
+| Method | Gateway route                   | Scope             |
+|--------|---------------------------------|-------------------|
+| POST   | api/v1/workspaces               | `workspace.write` |
+| GET    | api/v1/workspaces               | `workspace.read`  |
+| GET    | api/v1/workspaces/{id}          | `workspace.read`  |
+| PUT    | api/v1/workspaces/{id}          | `workspace.write` |
+| DELETE | api/v1/workspaces/{id}          | `workspace.write` |
+| POST   | api/v1/workspaces/{id}/channels | `channel.write`   |
+| GET    | api/v1/workspaces/{id}/channels | `channel.read`    |
+
+`POST /faucet` issues a token with the claims you ask for. Development only. `sub` has to be a Guid.
+
+Tests: `postman collection run tests/Bizcord.Gateway.Postman/Bizcord.Gateway.postman_collection.json` against the
+running compose stack.
 
 ## WorkspaceApi
+
+A missing or empty `X-User-Id` returns 400.
 
 | Method | Endpoint                        | Header      |
 |--------|---------------------------------|-------------|

@@ -1,5 +1,6 @@
 <Solution>
   <Folder Name="/src/">
+    <Project Path="src/Bizcord.Gateway/Bizcord.Gateway.csproj" />
     <Project Path="src/Bizcord.MessageClient/Bizcord.MessageClient.csproj" />
     <Project Path="src/Bizcord.WorkspaceApi/Bizcord.WorkspaceApi.csproj" />
     <Project Path="src\Bizcord.Contracts\Bizcord.Contracts.csproj" />
@@ -8,6 +9,7 @@
     <File Path="compose.yaml" />
   </Folder>
   <Folder Name="/tests/">
+    <File Path="tests/Bizcord.Gateway.Postman/Bizcord.Gateway.postman_collection.json" />
     <Project Path="tests/Bizcord.MessageClient.Tests/Bizcord.MessageClient.Tests.csproj" />
     <Project Path="tests/Bizcord.WorkspaceApi.Tests/Bizcord.WorkspaceApi.Tests.csproj" />
   </Folder>
