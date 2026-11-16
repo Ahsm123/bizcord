@@ -3,6 +3,7 @@ using Bizcord.MessageClient;
 using Bizcord.WorkspaceApi.Data;
 using Bizcord.WorkspaceApi.Services;
 using DbUp;
+using Microsoft.AspNetCore.Http.Timeouts;
 using Npgsql;
 using Scalar.AspNetCore;
 
@@ -25,7 +26,8 @@ if (args.Contains("migrate"))
     return upgrade.Successful ? 0 : 1;
 }
 
-builder.Services.AddSingleton(_ => NpgsqlDataSource.Create(connectionString));
+var csb = new NpgsqlConnectionStringBuilder(connectionString) { CancellationTimeout = -1 };
+builder.Services.AddSingleton(_ => NpgsqlDataSource.Create(csb.ConnectionString));
 builder.Services.AddScoped<IWorkspaceRepository, WorkspaceRepository>();
 
 // Services
@@ -37,6 +39,9 @@ builder.Services.AddMessaging(builder.Configuration, Assembly.GetExecutingAssemb
 builder.Services.AddControllers();
 builder.Services.AddOpenApi();
 
+builder.Services.AddRequestTimeouts(options =>
+    options.DefaultPolicy = new RequestTimeoutPolicy { Timeout = TimeSpan.FromSeconds(2) });
+
 var app = builder.Build();
 
 if (app.Environment.IsDevelopment())
@@ -45,6 +50,7 @@ if (app.Environment.IsDevelopment())
     app.MapScalarApiReference();
 }
 
+app.UseRequestTimeouts();
 app.UseHttpsRedirection();
 app.MapControllers();
 app.Run();
