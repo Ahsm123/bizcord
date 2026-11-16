@@ -1,0 +1,374 @@
+{
+  "info": {
+    "name": "Bizcord Gateway",
+    "description": "API tests for the gateway. They run against the compose stack, so start it first with `docker compose up -d`.\n\nRun all requests in order, in Postman or with the CLI:\n\n    postman collection run tests/Bizcord.Gateway.Postman/Bizcord.Gateway.postman_collection.json\n\nThe Faucet folder has to run first because it stores the tokens that the other folders use. The Routes folder deletes the workspace it creates.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "gatewayUrl", "value": "http://localhost:8080" },
+    { "key": "userId", "value": "" },
+    { "key": "token", "value": "" },
+    { "key": "readOnlyToken", "value": "" },
+    { "key": "workspaceId", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "Faucet",
+      "description": "Gets the tokens for the rest of the run. The faucet stands in for the identity provider in development.",
+      "item": [
+        {
+          "name": "Token with all scopes",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// sub has to be a Guid, because WorkspaceApi only accepts a Guid in X-User-Id",
+                  "pm.collectionVariables.set('userId', pm.variables.replaceIn('{{$guid}}'));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('faucet returns a token', () => {",
+                  "    pm.response.to.have.status(200);",
+                  "    pm.expect(pm.response.json().value).to.be.a('string').and.not.empty;",
+                  "});",
+                  "pm.collectionVariables.set('token', pm.response.json().value);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"claims\": {\n    \"sub\": \"{{userId}}\",\n    \"scope\": \"workspace.read workspace.write channel.read channel.write\"\n  }\n}"
+            },
+            "url": "{{gatewayUrl}}/faucet"
+          }
+        },
+        {
+          "name": "Token with read scope only",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('faucet returns a token', () => {",
+                  "    pm.response.to.have.status(200);",
+                  "    pm.expect(pm.response.json().value).to.be.a('string').and.not.empty;",
+                  "});",
+                  "pm.collectionVariables.set('readOnlyToken', pm.response.json().value);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"claims\": {\n    \"sub\": \"{{userId}}\",\n    \"scope\": \"workspace.read\"\n  }\n}"
+            },
+            "url": "{{gatewayUrl}}/faucet"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Authentication and authorization",
+      "description": "Issue #71: no token and an invalid token return 401, a valid token with the wrong scope returns 403, and a valid token with the right scope gets through.",
+      "item": [
+        {
+          "name": "No token returns 401",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": ["pm.test('401 without a token', () => pm.response.to.have.status(401));"]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{gatewayUrl}}/api/v1/workspaces"
+          }
+        },
+        {
+          "name": "Invalid token returns 401",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": ["pm.test('401 with a token the gateway did not sign', () => pm.response.to.have.status(401));"]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer invalid.token.value" }],
+            "url": "{{gatewayUrl}}/api/v1/workspaces"
+          }
+        },
+        {
+          "name": "Read-only token cannot create a workspace (403)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": ["pm.test('403 when the token lacks workspace.write', () => pm.response.to.have.status(403));"]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{readOnlyToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": { "mode": "raw", "raw": "{ \"name\": \"should-not-be-created\" }" },
+            "url": "{{gatewayUrl}}/api/v1/workspaces"
+          }
+        },
+        {
+          "name": "Read-only token can read workspaces (200)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": ["pm.test('200 when the token has workspace.read', () => pm.response.to.have.status(200));"]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{readOnlyToken}}" }],
+            "url": "{{gatewayUrl}}/api/v1/workspaces"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Routes",
+      "description": "Issue #70: every workspace and channel endpoint is reachable through the gateway. Also checks that X-User-Id comes from the token and not from the client.",
+      "item": [
+        {
+          "name": "Create workspace",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('201 and the workspace is returned', () => {",
+                  "    pm.response.to.have.status(201);",
+                  "    pm.expect(pm.response.json().name).to.eql('postman-gateway-test');",
+                  "});",
+                  "pm.collectionVariables.set('workspaceId', pm.response.json().id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": { "mode": "raw", "raw": "{ \"name\": \"postman-gateway-test\" }" },
+            "url": "{{gatewayUrl}}/api/v1/workspaces"
+          }
+        },
+        {
+          "name": "List workspaces",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// The list only holds the caller's workspaces, so finding the new one proves X-User-Id was the token's sub",
+                  "pm.test('200 and the list holds the new workspace', () => {",
+                  "    pm.response.to.have.status(200);",
+                  "    const ids = pm.response.json().map(w => w.id);",
+                  "    pm.expect(ids).to.include(pm.collectionVariables.get('workspaceId'));",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": "{{gatewayUrl}}/api/v1/workspaces"
+          }
+        },
+        {
+          "name": "List workspaces with a spoofed X-User-Id",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// If the gateway passed the client's header on, the random user would get an empty list",
+                  "pm.test('the client header is replaced by the token sub', () => {",
+                  "    pm.response.to.have.status(200);",
+                  "    const ids = pm.response.json().map(w => w.id);",
+                  "    pm.expect(ids).to.include(pm.collectionVariables.get('workspaceId'));",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "X-User-Id", "value": "{{$guid}}" }
+            ],
+            "url": "{{gatewayUrl}}/api/v1/workspaces"
+          }
+        },
+        {
+          "name": "Get workspace by id",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 and the same workspace', () => {",
+                  "    pm.response.to.have.status(200);",
+                  "    pm.expect(pm.response.json().id).to.eql(pm.collectionVariables.get('workspaceId'));",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": "{{gatewayUrl}}/api/v1/workspaces/{{workspaceId}}"
+          }
+        },
+        {
+          "name": "Update workspace",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": ["pm.test('204', () => pm.response.to.have.status(204));"]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": { "mode": "raw", "raw": "{ \"name\": \"postman-gateway-test-renamed\" }" },
+            "url": "{{gatewayUrl}}/api/v1/workspaces/{{workspaceId}}"
+          }
+        },
+        {
+          "name": "Create channel",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('201 and the channel belongs to the workspace', () => {",
+                  "    pm.response.to.have.status(201);",
+                  "    pm.expect(pm.response.json().workspaceId).to.eql(pm.collectionVariables.get('workspaceId'));",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": { "mode": "raw", "raw": "{ \"name\": \"general\" }" },
+            "url": "{{gatewayUrl}}/api/v1/workspaces/{{workspaceId}}/channels"
+          }
+        },
+        {
+          "name": "List channels",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 and the list holds the new channel', () => {",
+                  "    pm.response.to.have.status(200);",
+                  "    const names = pm.response.json().map(c => c.name);",
+                  "    pm.expect(names).to.include('general');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": "{{gatewayUrl}}/api/v1/workspaces/{{workspaceId}}/channels"
+          }
+        },
+        {
+          "name": "Delete workspace",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": ["pm.test('204', () => pm.response.to.have.status(204));"]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": "{{gatewayUrl}}/api/v1/workspaces/{{workspaceId}}"
+          }
+        },
+        {
+          "name": "Get deleted workspace returns 404",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": ["pm.test('404 from WorkspaceApi passes through the gateway', () => pm.response.to.have.status(404));"]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": "{{gatewayUrl}}/api/v1/workspaces/{{workspaceId}}"
+          }
+        }
+      ]
+    }
+  ]
+}

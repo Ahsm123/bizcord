@@ -13,10 +13,12 @@ This repository contains the **Workspace** service, which also covers **Channels
 ```
 bizcord/
 ├── src/
+│   ├── Bizcord.Gateway/          # Ocelot API gateway, the single entry point for clients
 │   ├── Bizcord.WorkspaceApi/     # Workspace service
 │   ├── Bizcord.Contracts/        # DTOs and events shared with other services
 │   └── Bizcord.MessageClient/    # RabbitMQ client wrapper
 ├── tests/
+│   ├── Bizcord.Gateway.Postman/  # Postman collection that tests the gateway against the running stack
 │   ├── Bizcord.WorkspaceApi.Tests/
 │   └── Bizcord.MessageClient.Tests/
 ├── docs/                         # diagrams, bounded contexts, events and REST API
@@ -49,6 +51,7 @@ How the services talk to each other:
 
 | Service       | Host port                |
 |---------------|--------------------------|
+| gateway       | 8080                     |
 | workspace-api | 5001                     |
 | workspace-db  | 5433                     |
 | rabbitmq      | 5672, 15672 (management) |
