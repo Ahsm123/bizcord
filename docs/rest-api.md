@@ -19,7 +19,7 @@ Same paths as WorkspaceApi. No token or an invalid token returns 401, a token wi
 
 `POST /faucet` issues a token with the claims you ask for. Development only. `sub` has to be a Guid.
 
-Tests: `postman collection run tests/Bizcord.Gateway.Postman/Bizcord.Gateway.postman_collection.json` against the
+Tests: `newman run tests/Bizcord.Gateway.Postman/Bizcord.Gateway.postman_collection.json` against the
 running compose stack.
 
 ## WorkspaceApi

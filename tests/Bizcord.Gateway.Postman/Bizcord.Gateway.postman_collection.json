@@ -1,7 +1,7 @@
 {
   "info": {
     "name": "Bizcord Gateway",
-    "description": "API tests for the gateway. They run against the compose stack, so start it first with `docker compose up -d`.\n\nRun all requests in order, in Postman or with the CLI:\n\n    postman collection run tests/Bizcord.Gateway.Postman/Bizcord.Gateway.postman_collection.json\n\nThe Faucet folder has to run first because it stores the tokens that the other folders use. The Routes folder deletes the workspace it creates.",
+    "description": "API tests for the gateway. They run against the compose stack, so start it first with `docker compose up -d`.\n\nRun all requests in order, in Postman or with newman (`npm install -g newman`):\n\n    newman run tests/Bizcord.Gateway.Postman/Bizcord.Gateway.postman_collection.json\n\nThe Faucet folder has to run first because it stores the tokens that the other folders use. The Routes folder deletes the workspace it creates.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [
