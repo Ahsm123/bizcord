@@ -19,9 +19,21 @@ public class WorkspaceService(IWorkspaceRepository workspaceRepository, IMessage
         return workspace;
     }
 
-    public async Task<Workspace?> GetByIdAsync(Guid id, CancellationToken ct)
-    {
-        return await workspaceRepository.GetByIdAsync(id, ct);
+    public async Task<Result<Workspace>> GetByIdAsync(Guid id, Guid userId, CancellationToken ct)
+    { 
+        var workspace = await workspaceRepository.GetByIdAsync(id, ct);
+        if (workspace is null)
+        {
+            return Result<Workspace>.Failure(WorkspaceErrors.NotFound);
+        }
+        
+        var result = workspace.CanRead(userId);
+        if (result.IsFailure)
+        {
+            return Result<Workspace>.Failure(result.Error);
+        }
+
+        return Result<Workspace>.Success(workspace);
     }
 
     public async Task<IReadOnlyList<WorkspaceDto>> GetAllAsync(Guid userId, CancellationToken ct)

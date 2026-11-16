@@ -15,6 +15,8 @@ public class UserIdHeaderTests(TestApiFactory factory) : IClassFixture<TestApiFa
         { "PUT", $"api/v1/workspaces/{Guid.NewGuid()}" },
         { "DELETE", $"api/v1/workspaces/{Guid.NewGuid()}" },
         { "POST", $"api/v1/workspaces/{Guid.NewGuid()}/channels" },
+        { "GET", $"api/v1/workspaces/{Guid.NewGuid()}" },
+        { "GET", $"api/v1/workspaces/{Guid.NewGuid()}/channels" },
     };
 
     [Theory]

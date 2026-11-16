@@ -24,17 +24,18 @@ public class WorkspacesController(IWorkspaceService workspaceService)
     }
 
     [HttpGet("{id:guid}")]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]                 
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]                  
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<ActionResult<WorkspaceDto>> GetById(Guid id, CancellationToken ct)
+    public async Task<ActionResult<WorkspaceDto>> GetById([FromUserIdHeader]Guid userId, Guid id, CancellationToken ct)
     {
-        var workspace = await workspaceService.GetByIdAsync(id, ct);
-        if (workspace is null)
+        var result = await workspaceService.GetByIdAsync(id, userId, ct);
+        if (result.IsFailure)
         {
-            return NotFound();
+            return result.Error.ToProblem();
         }
 
-        var dto = workspace.ToDto();
-        return Ok(dto);
+        return Ok(result.Value.ToDto());
     }
 
     [HttpGet]
@@ -63,7 +64,7 @@ public class WorkspacesController(IWorkspaceService workspaceService)
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
-    public async Task<ActionResult> Delete([FromUserIdHeader] Guid userId, Guid id, 
+    public async Task<ActionResult> Delete([FromUserIdHeader] Guid userId, Guid id,
         CancellationToken ct)
     {
         var result = await workspaceService.DeleteAsync(userId, id, ct);

@@ -21,10 +21,13 @@ public class RequestTimeoutTests(TestApiFactory factory) : IClassFixture<TestApi
     {
         // Arrange
         factory.Repository.hang = true;
+        // Without a user id the API answers 400 before it reaches the database
+        var request = new HttpRequestMessage(HttpMethod.Get, $"api/v1/workspaces/{Guid.NewGuid()}/channels");
+        request.Headers.Add("X-User-Id", Guid.NewGuid().ToString());
         var stopwatch = Stopwatch.StartNew();
 
         // Act
-        var response = await _client.GetAsync($"api/v1/workspaces/{Guid.NewGuid()}/channels");
+        var response = await _client.SendAsync(request);
 
         // Assert
         Assert.Equal(HttpStatusCode.GatewayTimeout, response.StatusCode);

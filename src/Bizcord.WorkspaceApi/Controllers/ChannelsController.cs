@@ -31,16 +31,22 @@ public class ChannelsController(IWorkspaceService workspaceService)
     }
 
     [HttpGet]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<ActionResult<IReadOnlyList<ChannelDto>>> GetAll(Guid workspaceId, CancellationToken ct)
+    public async Task<ActionResult<IReadOnlyList<ChannelDto>>>
+        GetAll([FromUserIdHeader] Guid userId,
+            Guid workspaceId, CancellationToken ct)
     {
-        var workspace = await workspaceService.GetByIdAsync(workspaceId, ct);
-        if (workspace is null)
+        var result = await workspaceService.GetByIdAsync(workspaceId,
+            userId, ct);
+        if (result.IsFailure)
         {
-            return NotFound();
+            return result.Error.ToProblem();
         }
 
-        var dtos = workspace.Channels.Select(c => c.ToDto(workspaceId)).ToList();
+        var dtos = result.Value.Channels.Select(c =>
+            c.ToDto(workspaceId)).ToList();
         return Ok(dtos);
     }
 }
