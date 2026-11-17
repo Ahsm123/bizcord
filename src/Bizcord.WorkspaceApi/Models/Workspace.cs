@@ -30,7 +30,8 @@ public class Workspace
 
     // Rebuilds a workspace from stored state. No rules and no authorization run
     // here, this data was already validated when it was written.
-    internal static Workspace Rehydrate(Guid id, string name, IEnumerable<Member> members, IEnumerable<Channel> channels)
+    internal static Workspace Rehydrate(Guid id, string name, IEnumerable<Member> members,
+        IEnumerable<Channel> channels)
     {
         var workspace = new Workspace(id, name);
         workspace._members.AddRange(members);
@@ -39,6 +40,13 @@ public class Workspace
     }
 
     public Result CanDelete(Guid actingUserId) => Authorize(actingUserId, Permission.DeleteWorkspace);
+
+    public Result CanRead(Guid actingUserId)
+    {
+        return _members.Any(u => u.UserId == actingUserId)
+            ? Result.Success()
+            : Result.Failure(WorkspaceErrors.CallerNotAMember);
+    }
 
     public Result AddMember(Guid actingUserId, Guid userId, MemberRole newMemberRole)
     {
@@ -132,7 +140,6 @@ public class Workspace
 
         Name = newName;
         return Result.Success();
-
     }
 
     private Result Authorize(Guid actingUserId, Permission permission)

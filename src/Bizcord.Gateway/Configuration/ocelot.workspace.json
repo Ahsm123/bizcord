@@ -10,9 +10,6 @@
         "AuthenticationProviderKeys": ["Bearer"],
         "AllowedScopes": ["workspace.read"]
       },
-      "AddHeadersToRequest": {
-        "X-User-Id": "Claims[sub] > value"
-      },
       "Priority": 2,
       "DownstreamHostAndPorts": [
         {
@@ -31,9 +28,6 @@
         "AuthenticationProviderKeys": ["Bearer"],
         "AllowedScopes": ["workspace.write"]
       },
-      "AddHeadersToRequest": {
-        "X-User-Id": "Claims[sub] > value"
-      },
       "Priority": 2,
       "DownstreamHostAndPorts": [
         {
@@ -49,9 +43,6 @@
       "AuthenticationOptions": {
         "AuthenticationProviderKeys": ["Bearer"],
         "AllowedScopes": ["workspace.write"]
-      },
-      "AddHeadersToRequest": {
-        "X-User-Id": "Claims[sub] > value"
       },
       "DownstreamPathTemplate": "/api/v1/workspaces/{id}",
       "DownstreamScheme": "http",
@@ -70,9 +61,6 @@
         "AuthenticationProviderKeys": ["Bearer"],
         "AllowedScopes": ["workspace.read"]
       },
-      "AddHeadersToRequest": {
-        "X-User-Id": "Claims[sub] > value"
-      },
       "DownstreamPathTemplate": "/api/v1/workspaces/{id}",
       "DownstreamScheme": "http",
       "DownstreamHostAndPorts": [
@@ -89,9 +77,6 @@
       "AuthenticationOptions": {
         "AuthenticationProviderKeys": ["Bearer"],
         "AllowedScopes": ["channel.read"]
-      },
-      "AddHeadersToRequest": {
-        "X-User-Id": "Claims[sub] > value"
       },
       "Priority": 2,
       "DownstreamPathTemplate": "/api/v1/workspaces/{workspaceId}/channels",
@@ -111,11 +96,27 @@
         "AuthenticationProviderKeys": ["Bearer"],
         "AllowedScopes": ["channel.write"]
       },
-      "AddHeadersToRequest": {
-        "X-User-Id": "Claims[sub] > value"
-      },
       "Priority": 2,
       "DownstreamPathTemplate": "/api/v1/workspaces/{workspaceId}/channels",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "workspace-api",
+          "Port": 8080
+        }
+      ]
+    },
+    {
+      "Key": "internal-channel-member",
+      "UpstreamPathTemplate": "/internal/channels/{channelId}/members/{userId}",
+      "UpstreamHttpMethod": ["GET"],
+      "AuthenticationOptions": {
+        "AuthenticationProviderKeys": ["Bearer"]
+      },
+      "RouteClaimsRequirement": {
+        "role": "internal-service"
+      },
+      "DownstreamPathTemplate": "/internal/channels/{channelId}/members/{userId}",
       "DownstreamScheme": "http",
       "DownstreamHostAndPorts": [
         {

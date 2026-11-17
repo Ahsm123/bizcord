@@ -1,3 +1,4 @@
+using Bizcord.WorkspaceApi.Authorization;
 using System.Diagnostics;
 using System.Net;
 
@@ -11,7 +12,7 @@ public class RequestTimeoutTests(TestApiFactory factory) : IClassFixture<TestApi
 
     private static HttpClient CreateClient(TestApiFactory factory)
     {
-        var client = factory.CreateClient();
+        var client = factory.CreateClientWithRole(Policies.User);
         client.Timeout = TimeSpan.FromSeconds(5);
         return client;
     }
@@ -21,10 +22,11 @@ public class RequestTimeoutTests(TestApiFactory factory) : IClassFixture<TestApi
     {
         // Arrange
         factory.Repository.hang = true;
+        var request = new HttpRequestMessage(HttpMethod.Get, $"api/v1/workspaces/{Guid.NewGuid()}/channels");
         var stopwatch = Stopwatch.StartNew();
 
         // Act
-        var response = await _client.GetAsync($"api/v1/workspaces/{Guid.NewGuid()}/channels");
+        var response = await _client.SendAsync(request);
 
         // Assert
         Assert.Equal(HttpStatusCode.GatewayTimeout, response.StatusCode);

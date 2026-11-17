@@ -7,12 +7,25 @@ public class WorkspaceTests
 {
     private readonly Guid _admin = Guid.NewGuid();
     private readonly Guid _user = Guid.NewGuid();
+    private readonly Guid _nonMember = Guid.NewGuid();
     private readonly Workspace _workspace;
 
     public WorkspaceTests()
     {
         _workspace = Workspace.Create(_admin, "test");
         _workspace.AddMember(_admin, _user, MemberRole.User);
+    }
+
+    [Fact]
+    public void CanRead_Member_Succeeds()
+    {
+        Assert.True(_workspace.CanRead(_user).IsSuccess);
+    }
+
+    [Fact]
+    public void CanRead_NonMember_IsNotAMember()
+    {
+        Assert.Equal(WorkspaceErrors.CallerNotAMember, _workspace.CanRead(_nonMember).Error);
     }
 
     [Fact]

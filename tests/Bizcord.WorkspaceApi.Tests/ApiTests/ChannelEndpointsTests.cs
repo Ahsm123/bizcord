@@ -38,8 +38,8 @@ public class ChannelEndpointsTests(TestApiFactory factory) : IClassFixture<TestA
             .Content.ReadFromJsonAsync<ChannelDto>();
 
         // Act
-        var channels = await _client.GetFromJsonAsync<List<ChannelDto>>(
-            $"api/v1/workspaces/{workspace.Id}/channels");
+        var response = await GetChannelsAsync(workspace.Id, _admin);
+        var channels = await response.Content.ReadFromJsonAsync<List<ChannelDto>>();
 
         // Assert
         Assert.Equal([created], channels);
@@ -98,7 +98,8 @@ public class ChannelEndpointsTests(TestApiFactory factory) : IClassFixture<TestA
     [Theory]
     [InlineData("")]
     [InlineData("   ")]
-    [InlineData("this name is far too long for a channel because channel names may only be one hundred characters long")]
+    [InlineData(
+        "this name is far too long for a channel because channel names may only be one hundred characters long")]
     public async Task CreateChannel_InvalidName_Returns400(string name)
     {
         // Arrange
@@ -123,8 +124,8 @@ public class ChannelEndpointsTests(TestApiFactory factory) : IClassFixture<TestA
         await factory.Repository.SaveAsync(workspace, CancellationToken.None);
 
         // Act
-        var channels = await _client.GetFromJsonAsync<List<ChannelDto>>(
-            $"api/v1/workspaces/{workspace.Id}/channels");
+        var response = await GetChannelsAsync(workspace.Id, _admin);
+        var channels = await response.Content.ReadFromJsonAsync<List<ChannelDto>>();
 
         // Assert
         Assert.NotNull(channels);
@@ -137,7 +138,7 @@ public class ChannelEndpointsTests(TestApiFactory factory) : IClassFixture<TestA
     public async Task GetChannels_UnknownWorkspace_Returns404()
     {
         // Act
-        var response = await _client.GetAsync($"api/v1/workspaces/{Guid.NewGuid()}/channels");
+        var response = await GetChannelsAsync(Guid.NewGuid(), _admin);
 
         // Assert
         Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
@@ -157,7 +158,14 @@ public class ChannelEndpointsTests(TestApiFactory factory) : IClassFixture<TestA
         {
             Content = JsonContent.Create(new { name })
         };
-        request.Headers.Add("X-User-Id", userId.ToString());
+        request.Headers.Authorization = TestApiFactory.UserAuthHeader(userId);
+        return _client.SendAsync(request);
+    }
+
+    private Task<HttpResponseMessage> GetChannelsAsync(Guid workspaceId, Guid userId)
+    {
+        var request = new HttpRequestMessage(HttpMethod.Get, $"api/v1/workspaces/{workspaceId}/channels");
+        request.Headers.Authorization = TestApiFactory.UserAuthHeader(userId);
         return _client.SendAsync(request);
     }
 }

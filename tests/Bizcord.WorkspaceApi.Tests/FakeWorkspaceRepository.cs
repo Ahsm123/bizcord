@@ -47,4 +47,8 @@ public class FakeWorkspaceRepository : IWorkspaceRepository
     {
         return Task.FromResult(workspaces.Remove(id));
     }
+
+    public Task<bool> IsChannelMemberAsync(Guid userId, Guid channelId, CancellationToken ct) =>
+        Task.FromResult(workspaces.Values.Any(w =>
+            w.Channels.Any(c => c.Id == channelId) && w.Members.Any(m => m.UserId == userId)));
 }

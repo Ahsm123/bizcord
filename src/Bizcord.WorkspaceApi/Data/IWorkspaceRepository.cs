@@ -10,4 +10,5 @@ public interface IWorkspaceRepository
     Task<IReadOnlyList<WorkspaceDto>> ListForUserAsync(Guid userId, CancellationToken ct);
     Task<bool> UpdateChannelLastActivityAsync(Guid channelId, DateTime postedAt, CancellationToken ct);
     Task<bool> DeleteAsync(Guid id, CancellationToken ct);
+    Task<bool> IsChannelMemberAsync(Guid userId, Guid channelId, CancellationToken ct);
 }
