@@ -45,7 +45,7 @@ public static class ServiceExtensions
     }
 
     private static string GetSigningKey(IConfiguration configuration) =>
-        GetRequired(configuration, "AuthenticationProviderKey");
+        GetRequired(configuration, "Jwt:IssuerSigningKey");
 
     private static string GetRequired(IConfiguration configuration, string key) =>
         configuration[key] ?? throw new InvalidOperationException($"{key} is required.");

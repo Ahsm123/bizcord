@@ -15,8 +15,9 @@ public class MessagePostedHandlerTests(WebApplicationFactory<Program> factory)
     [Fact]
     public async Task MessagePostedEvent_IsConsumed_AndResultEventPublished()
     {
-        var app = factory.WithWebHostBuilder(b =>
-            b.UseSetting("ConnectionStrings:Messaging", "host=localhost;username=kalo;password=kalo"));
+        var app = factory.WithWebHostBuilder(b => b
+            .UseSetting("ConnectionStrings:Messaging", "host=localhost;username=kalo;password=kalo")
+            .UseSetting("Jwt:IssuerSigningKey", "test-signing-key-that-is-at-least-32-bytes-long"));
         var client = app.Services.GetRequiredService<IMessageClient>();
         var messageId = Guid.NewGuid();
 

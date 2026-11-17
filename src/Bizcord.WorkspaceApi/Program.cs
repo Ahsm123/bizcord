@@ -1,6 +1,7 @@
 using System.Reflection;
 using System.Text;
 using Bizcord.MessageClient;
+using Bizcord.Vault;
 using Bizcord.WorkspaceApi.Authorization;
 using Bizcord.WorkspaceApi.Data;
 using Bizcord.WorkspaceApi.Extensions;
@@ -14,6 +15,13 @@ using Npgsql;
 using Scalar.AspNetCore;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// Secrets
+if (builder.Configuration["VAULT_TOKEN"] is not null)
+{
+    await builder.Configuration.AddVaultSecretsAsync("workspace-api");
+    await builder.Configuration.AddVaultSecretsAsync("shared/jwt");
+}
 
 // Data
 var connectionString = builder.Configuration.GetConnectionString("Database")

@@ -1,8 +1,12 @@
 using Bizcord.Gateway.Extensions;
+using Bizcord.Vault;
 using Ocelot.DependencyInjection;
 using Ocelot.Middleware;
 
 var builder = WebApplication.CreateBuilder(args);
+
+if (builder.Configuration["VAULT_TOKEN"] is not null)
+    await builder.Configuration.AddVaultSecretsAsync("shared/jwt");
 
 // Ocelot merges these source files into a generated ocelot.json at startup.
 builder.Configuration.AddOcelot("Configuration", builder.Environment);

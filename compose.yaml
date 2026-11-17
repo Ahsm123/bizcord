@@ -21,9 +21,12 @@ services:
       dockerfile: src/Bizcord.WorkspaceApi/Dockerfile
     command: [ "migrate" ]
     environment:
-      ConnectionStrings__Database: "Host=workspace-db;Port=5432;Database=workspace;Username=postgres;Password=postgres"
+      VAULT_ADDR: http://vault:8200
+      VAULT_TOKEN: ${WORKSPACE_API_VAULT_TOKEN}
     depends_on:
       workspace-db:
+        condition: service_healthy
+      vault:
         condition: service_healthy
 
   workspace-api:
@@ -34,13 +37,16 @@ services:
     # No port: only the gateway is reachable from outside the compose network (#72)
     environment:
       ASPNETCORE_ENVIRONMENT: Development
-      ConnectionStrings__Database: "Host=workspace-db;Port=5432;Database=workspace;Username=postgres;Password=postgres"
+      VAULT_ADDR: http://vault:8200
+      VAULT_TOKEN: ${WORKSPACE_API_VAULT_TOKEN}
       ConnectionStrings__Messaging: "host=rabbitmq;username=kalo;password=kalo"
     depends_on:
       rabbitmq:
         condition: service_healthy
       workspace-migrator:
         condition: service_completed_successfully
+      vault:
+        condition: service_healthy
 
   gateway:
     image: bizcord-gateway
@@ -52,8 +58,11 @@ services:
     environment:
       ASPNETCORE_ENVIRONMENT: Development
       ASPNETCORE_HTTP_PORTS: "8080"
+      VAULT_ADDR: http://vault:8200
+      VAULT_TOKEN: ${GATEWAY_VAULT_TOKEN}
     depends_on:
       - workspace-api
+      - vault
 
   rabbitmq:
     image: rabbitmq:4-management
@@ -71,8 +80,24 @@ services:
       test: [ "CMD-SHELL", "rabbitmq-diagnostics ping" ]
       interval: 5s
       retries: 10
+  
+  vault:
+    image: hashicorp/vault:1.21.0
+    ports:
+      - "127.0.0.1:8200:8200"
+    volumes:
+      - ./config.hcl:/vault/config/config.hcl:ro
+      - vault-data:/vault/file
+    command: server
+    environment:
+      VAULT_ADDR: http://127.0.0.1:8200
+    healthcheck:
+      test: [ "CMD", "vault", "status" ]
+      interval: 5s
+      retries: 10
 
 volumes:
   workspace-db-data:
   rabbitmq-lib:
   rabbitmq-log:
+  vault-data:
