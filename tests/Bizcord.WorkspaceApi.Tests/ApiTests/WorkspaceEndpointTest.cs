@@ -53,7 +53,7 @@ public class WorkspaceEndpointTests(TestApiFactory factory) : IClassFixture<Test
         var request = new HttpRequestMessage(HttpMethod.Get, $"api/v1/workspaces/{workspaceId}")
         {
         };
-        request.Headers.Add("X-User-Id", userId.ToString());
+        request.Headers.Authorization = TestApiFactory.UserAuthHeader(userId);
         return _client.SendAsync(request);
     }
 }

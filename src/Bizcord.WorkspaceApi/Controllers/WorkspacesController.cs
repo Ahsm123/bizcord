@@ -15,10 +15,9 @@ public class WorkspacesController(IWorkspaceService workspaceService)
     [HttpPost]
     [ProducesResponseType(StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<ActionResult<WorkspaceDto>> Create([FromUserIdHeader] Guid ownerId,
-        CreateWorkspaceRequest request, CancellationToken ct)
+    public async Task<ActionResult<WorkspaceDto>> Create(CreateWorkspaceRequest request, CancellationToken ct)
     {
-        var workspace = await workspaceService.CreateAsync(ownerId, request.Name, ct);
+        var workspace = await workspaceService.CreateAsync(User.GetUserId(), request.Name, ct);
         var dto = workspace.ToDto();
         return CreatedAtAction(nameof(GetById), new { id = workspace.Id }, dto);
     }
@@ -27,9 +26,9 @@ public class WorkspacesController(IWorkspaceService workspaceService)
     [ProducesResponseType(StatusCodes.Status400BadRequest)]                 
     [ProducesResponseType(StatusCodes.Status403Forbidden)]                  
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<ActionResult<WorkspaceDto>> GetById([FromUserIdHeader]Guid userId, Guid id, CancellationToken ct)
+    public async Task<ActionResult<WorkspaceDto>> GetById(Guid id, CancellationToken ct)
     {
-        var result = await workspaceService.GetByIdAsync(id, userId, ct);
+        var result = await workspaceService.GetByIdAsync(id, User.GetUserId(), ct);
         if (result.IsFailure)
         {
             return result.Error.ToProblem();
@@ -40,10 +39,9 @@ public class WorkspacesController(IWorkspaceService workspaceService)
 
     [HttpGet]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<ActionResult<IReadOnlyList<WorkspaceDto>>> GetAll([FromUserIdHeader] Guid userId,
-        CancellationToken ct)
+    public async Task<ActionResult<IReadOnlyList<WorkspaceDto>>> GetAll(CancellationToken ct)
     {
-        var userWorkspaces = await workspaceService.GetAllAsync(userId, ct);
+        var userWorkspaces = await workspaceService.GetAllAsync(User.GetUserId(), ct);
         return Ok(userWorkspaces);
     }
 
@@ -52,10 +50,9 @@ public class WorkspacesController(IWorkspaceService workspaceService)
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
-    public async Task<ActionResult> Update([FromUserIdHeader] Guid userId, Guid id,
-        UpdateWorkspaceRequest request, CancellationToken ct)
+    public async Task<ActionResult> Update(Guid id, UpdateWorkspaceRequest request, CancellationToken ct)
     {
-        var result = await workspaceService.UpdateAsync(userId, id, request.Name, ct);
+        var result = await workspaceService.UpdateAsync(User.GetUserId(), id, request.Name, ct);
         return result.ToActionResult();
     }
 
@@ -64,10 +61,9 @@ public class WorkspacesController(IWorkspaceService workspaceService)
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
-    public async Task<ActionResult> Delete([FromUserIdHeader] Guid userId, Guid id,
-        CancellationToken ct)
+    public async Task<ActionResult> Delete(Guid id, CancellationToken ct)
     {
-        var result = await workspaceService.DeleteAsync(userId, id, ct);
+        var result = await workspaceService.DeleteAsync(User.GetUserId(), id, ct);
         return result.ToActionResult();
     }
 }

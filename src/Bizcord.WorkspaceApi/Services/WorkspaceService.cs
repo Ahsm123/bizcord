@@ -20,13 +20,13 @@ public class WorkspaceService(IWorkspaceRepository workspaceRepository, IMessage
     }
 
     public async Task<Result<Workspace>> GetByIdAsync(Guid id, Guid userId, CancellationToken ct)
-    { 
+    {
         var workspace = await workspaceRepository.GetByIdAsync(id, ct);
         if (workspace is null)
         {
             return Result<Workspace>.Failure(WorkspaceErrors.NotFound);
         }
-        
+
         var result = workspace.CanRead(userId);
         if (result.IsFailure)
         {
@@ -44,13 +44,13 @@ public class WorkspaceService(IWorkspaceRepository workspaceRepository, IMessage
     public async Task<Result> UpdateAsync(Guid actingUserId, Guid workspaceId, string newName, CancellationToken ct)
     {
         var workspace = await workspaceRepository.GetByIdAsync(workspaceId, ct);
-        if(workspace is null)
+        if (workspace is null)
         {
             return Result.Failure(WorkspaceErrors.NotFound);
         }
 
         var result = workspace.Rename(actingUserId, newName);
-        if(result.IsFailure)
+        if (result.IsFailure)
         {
             return result;
         }
@@ -63,13 +63,13 @@ public class WorkspaceService(IWorkspaceRepository workspaceRepository, IMessage
     public async Task<Result> DeleteAsync(Guid actingUserId, Guid workspaceId, CancellationToken ct)
     {
         var workspace = await workspaceRepository.GetByIdAsync(workspaceId, ct);
-        if(workspace is null)
+        if (workspace is null)
         {
             return Result.Failure(WorkspaceErrors.NotFound);
         }
 
         var result = workspace.CanDelete(actingUserId);
-        if(result.IsFailure)
+        if (result.IsFailure)
         {
             return result;
         }
@@ -111,5 +111,16 @@ public class WorkspaceService(IWorkspaceRepository workspaceRepository, IMessage
 
         await messageClient.PublishAsync(
             new ChannelActivityUpdatedEvent(message.MessageId, message.ChannelId, message.PostedAt), ct);
+    }
+
+    public async Task<Result> IsChannelMemberAsync(Guid userId, Guid channelId, CancellationToken ct)
+    {
+        var result = await workspaceRepository.IsChannelMemberAsync(userId, channelId, ct);
+        if (!result)
+        {
+            return Result.Failure(WorkspaceErrors.CallerNotAMember);
+        }
+
+        return Result.Success();
     }
 }

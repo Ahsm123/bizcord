@@ -13,4 +13,5 @@ public interface IWorkspaceService
     Task<Result> DeleteAsync(Guid actingUserId, Guid workspaceId, CancellationToken ct);
     Task<Result<Channel>> CreateChannelAsync(Guid actingUserId, Guid workspaceId, string name, CancellationToken ct);
     Task RecordChannelActivityAsync(MessagePostedEvent message, CancellationToken ct);
+    Task<Result> IsChannelMemberAsync(Guid userId, Guid channelId, CancellationToken ct);
 }

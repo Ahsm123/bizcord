@@ -9,6 +9,7 @@
     { "key": "userId", "value": "" },
     { "key": "token", "value": "" },
     { "key": "readOnlyToken", "value": "" },
+    { "key": "serviceToken", "value": "" },
     { "key": "workspaceId", "value": "" }
   ],
   "item": [
@@ -24,7 +25,7 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "// sub has to be a Guid, because WorkspaceApi only accepts a Guid in X-User-Id",
+                  "// sub has to be a Guid and role has to be user, because WorkspaceApi's user policy requires both",
                   "pm.collectionVariables.set('userId', pm.variables.replaceIn('{{$guid}}'));"
                 ]
               }
@@ -48,7 +49,7 @@
             "header": [{ "key": "Content-Type", "value": "application/json" }],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"claims\": {\n    \"sub\": \"{{userId}}\",\n    \"scope\": \"workspace.read workspace.write channel.read channel.write\"\n  }\n}"
+              "raw": "{\n  \"claims\": {\n    \"sub\": \"{{userId}}\",\n    \"role\": \"user\",\n    \"scope\": \"workspace.read workspace.write channel.read channel.write\"\n  }\n}"
             },
             "url": "{{gatewayUrl}}/faucet"
           }
@@ -75,9 +76,96 @@
             "header": [{ "key": "Content-Type", "value": "application/json" }],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"claims\": {\n    \"sub\": \"{{userId}}\",\n    \"scope\": \"workspace.read\"\n  }\n}"
+              "raw": "{\n  \"claims\": {\n    \"sub\": \"{{userId}}\",\n    \"role\": \"user\",\n    \"scope\": \"workspace.read\"\n  }\n}"
             },
             "url": "{{gatewayUrl}}/faucet"
+          }
+        },
+        {
+          "name": "Service token for the Message service",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('faucet returns a token', () => {",
+                  "    pm.response.to.have.status(200);",
+                  "    pm.expect(pm.response.json().value).to.be.a('string').and.not.empty;",
+                  "});",
+                  "pm.collectionVariables.set('serviceToken', pm.response.json().value);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"claims\": {\n    \"sub\": \"message-api\",\n    \"role\": \"internal-service\"\n  }\n}"
+            },
+            "url": "{{gatewayUrl}}/faucet"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Internal endpoints",
+      "description": "Issue #72: an internal endpoint needs a token with role internal-service. No token returns 401, a user token returns 403.",
+      "item": [
+        {
+          "name": "No token returns 401",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": ["pm.test('401 without a token', () => pm.response.to.have.status(401));"]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{gatewayUrl}}/internal/channels/{{$guid}}/members/{{userId}}"
+          }
+        },
+        {
+          "name": "User token returns 403",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": ["pm.test('403 when the token lacks role internal-service', () => pm.response.to.have.status(403));"]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": "{{gatewayUrl}}/internal/channels/{{$guid}}/members/{{userId}}"
+          }
+        },
+        {
+          "name": "Service token reaches WorkspaceApi",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// The channel doesn't exist, so a 404 from WorkspaceApi proves the request got past both gateway and API",
+                  "pm.test('404 from WorkspaceApi passes through the gateway', () => pm.response.to.have.status(404));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{serviceToken}}" }],
+            "url": "{{gatewayUrl}}/internal/channels/{{$guid}}/members/{{userId}}"
           }
         }
       ]
@@ -162,7 +250,7 @@
     },
     {
       "name": "Routes",
-      "description": "Issue #70: every workspace and channel endpoint is reachable through the gateway. Also checks that X-User-Id comes from the token and not from the client.",
+      "description": "Issue #70: every workspace and channel endpoint is reachable through the gateway. Also checks that the acting user comes from the token's sub and not from a client header.",
       "item": [
         {
           "name": "Create workspace",
@@ -199,7 +287,7 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "// The list only holds the caller's workspaces, so finding the new one proves X-User-Id was the token's sub",
+                  "// The list only holds the caller's workspaces, so finding the new one proves the API used the token's sub",
                   "pm.test('200 and the list holds the new workspace', () => {",
                   "    pm.response.to.have.status(200);",
                   "    const ids = pm.response.json().map(w => w.id);",
@@ -223,8 +311,8 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "// If the gateway passed the client's header on, the random user would get an empty list",
-                  "pm.test('the client header is replaced by the token sub', () => {",
+                  "// If anything trusted the client's header, the random user would get an empty list",
+                  "pm.test('the client header is ignored in favour of the token sub', () => {",
                   "    pm.response.to.have.status(200);",
                   "    const ids = pm.response.json().map(w => w.id);",
                   "    pm.expect(ids).to.include(pm.collectionVariables.get('workspaceId'));",

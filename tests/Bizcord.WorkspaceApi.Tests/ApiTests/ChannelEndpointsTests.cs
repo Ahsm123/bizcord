@@ -158,14 +158,14 @@ public class ChannelEndpointsTests(TestApiFactory factory) : IClassFixture<TestA
         {
             Content = JsonContent.Create(new { name })
         };
-        request.Headers.Add("X-User-Id", userId.ToString());
+        request.Headers.Authorization = TestApiFactory.UserAuthHeader(userId);
         return _client.SendAsync(request);
     }
 
     private Task<HttpResponseMessage> GetChannelsAsync(Guid workspaceId, Guid userId)
     {
         var request = new HttpRequestMessage(HttpMethod.Get, $"api/v1/workspaces/{workspaceId}/channels");
-        request.Headers.Add("X-User-Id", userId.ToString());
+        request.Headers.Authorization = TestApiFactory.UserAuthHeader(userId);
         return _client.SendAsync(request);
     }
 }

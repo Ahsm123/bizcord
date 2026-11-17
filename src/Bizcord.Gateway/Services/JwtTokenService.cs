@@ -11,7 +11,8 @@ public class CreateTokenOptions
     public Dictionary<string, string> Claims { get; set; } = new();
 }
 
-public class JwtTokenService(string authenticationProviderKey)
+// iss and aud are set from config so the downstream API can check who issued the token and that it was meant for it
+public class JwtTokenService(string authenticationProviderKey, string issuer, string audience)
 {
     public AuthenticationToken CreateToken(CreateTokenOptions options)
     {
@@ -30,6 +31,8 @@ public class JwtTokenService(string authenticationProviderKey)
         }
 
         var tokenOptions = new JwtSecurityToken(
+            issuer: issuer,
+            audience: audience,
             signingCredentials: signingCredentials,
             expires: DateTime.UtcNow.AddHours(1),
             claims: claims

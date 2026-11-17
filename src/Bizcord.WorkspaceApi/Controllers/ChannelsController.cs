@@ -17,10 +17,10 @@ public class ChannelsController(IWorkspaceService workspaceService)
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status409Conflict)]
-    public async Task<ActionResult<ChannelDto>> Create([FromUserIdHeader] Guid userId, Guid workspaceId,
-        CreateChannelRequest request, CancellationToken ct)
+    public async Task<ActionResult<ChannelDto>> Create(Guid workspaceId, CreateChannelRequest request,
+        CancellationToken ct)
     {
-        var result = await workspaceService.CreateChannelAsync(userId, workspaceId, request.Name, ct);
+        var result = await workspaceService.CreateChannelAsync(User.GetUserId(), workspaceId, request.Name, ct);
         if (result.IsFailure)
         {
             return result.Error.ToProblem();
@@ -35,11 +35,9 @@ public class ChannelsController(IWorkspaceService workspaceService)
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<IReadOnlyList<ChannelDto>>>
-        GetAll([FromUserIdHeader] Guid userId,
-            Guid workspaceId, CancellationToken ct)
+        GetAll(Guid workspaceId, CancellationToken ct)
     {
-        var result = await workspaceService.GetByIdAsync(workspaceId,
-            userId, ct);
+        var result = await workspaceService.GetByIdAsync(workspaceId, User.GetUserId(), ct);
         if (result.IsFailure)
         {
             return result.Error.ToProblem();

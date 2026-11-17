@@ -131,4 +131,19 @@ internal sealed class WorkspaceRepository(NpgsqlDataSource dataSource) : IWorksp
         var rows = await connection.ExecuteAsync(new CommandDefinition(sql, new { id }, cancellationToken: ct));
         return rows > 0;
     }
+
+    public async Task<bool> IsChannelMemberAsync(Guid userId, Guid channelId, CancellationToken ct)
+    {
+        const string sql = """
+                           select exists (
+                           select 1
+                           from channels c
+                           join members m on m.workspace_id = c.workspace_id
+                           where c.id = @channelId and m.user_id = @userId);
+                           """;
+
+        await using var connection = await dataSource.OpenConnectionAsync(ct);
+        return await connection.ExecuteScalarAsync<bool>(new CommandDefinition(sql, new { channelId, userId },
+            cancellationToken: ct));
+    }
 }

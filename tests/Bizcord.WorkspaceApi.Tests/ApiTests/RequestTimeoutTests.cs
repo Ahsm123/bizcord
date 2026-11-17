@@ -1,3 +1,4 @@
+using Bizcord.WorkspaceApi.Authorization;
 using System.Diagnostics;
 using System.Net;
 
@@ -11,7 +12,7 @@ public class RequestTimeoutTests(TestApiFactory factory) : IClassFixture<TestApi
 
     private static HttpClient CreateClient(TestApiFactory factory)
     {
-        var client = factory.CreateClient();
+        var client = factory.CreateClientWithRole(Policies.User);
         client.Timeout = TimeSpan.FromSeconds(5);
         return client;
     }
@@ -21,9 +22,7 @@ public class RequestTimeoutTests(TestApiFactory factory) : IClassFixture<TestApi
     {
         // Arrange
         factory.Repository.hang = true;
-        // Without a user id the API answers 400 before it reaches the database
         var request = new HttpRequestMessage(HttpMethod.Get, $"api/v1/workspaces/{Guid.NewGuid()}/channels");
-        request.Headers.Add("X-User-Id", Guid.NewGuid().ToString());
         var stopwatch = Stopwatch.StartNew();
 
         // Act

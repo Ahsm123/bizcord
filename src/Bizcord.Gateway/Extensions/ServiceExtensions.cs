@@ -10,13 +10,16 @@ public static class ServiceExtensions
 {
     public static IServiceCollection AddJwtTokenService(this IServiceCollection services, IConfiguration configuration)
     {
-        services.AddSingleton(new JwtTokenService(GetSigningKey(configuration)));
+        services.AddSingleton(new JwtTokenService(GetSigningKey(configuration),
+            GetRequired(configuration, "Jwt:Issuer"), GetRequired(configuration, "Jwt:Audience")));
         return services;
     }
 
     public static IServiceCollection AddGatewayServices(this IServiceCollection services, IConfiguration configuration)
     {
         var signingKey = GetSigningKey(configuration);
+        var issuer = GetRequired(configuration, "Jwt:Issuer");
+        var audience = GetRequired(configuration, "Jwt:Audience");
         services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             .AddJwtBearer(JwtBearerDefaults.AuthenticationScheme, options =>
             {
@@ -24,8 +27,10 @@ public static class ServiceExtensions
                 options.MapInboundClaims = false;
                 options.TokenValidationParameters = new TokenValidationParameters
                 {
-                    ValidateIssuer = false,
-                    ValidateAudience = false,
+                    ValidateIssuer = true,
+                    ValidIssuer = issuer,
+                    ValidateAudience = true,
+                    ValidAudience = audience,
                     ValidateLifetime = true,
                     ValidateIssuerSigningKey = true,
                     IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(signingKey)),
@@ -40,6 +45,8 @@ public static class ServiceExtensions
     }
 
     private static string GetSigningKey(IConfiguration configuration) =>
-        configuration["AuthenticationProviderKey"]
-        ?? throw new InvalidOperationException("AuthenticationProviderKey is required.");
+        GetRequired(configuration, "AuthenticationProviderKey");
+
+    private static string GetRequired(IConfiguration configuration, string key) =>
+        configuration[key] ?? throw new InvalidOperationException($"{key} is required.");
 }
