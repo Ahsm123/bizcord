@@ -1,0 +1,10 @@
+{
+  "profiles": {
+    "Bizcord.MessageStub": {
+      "commandName": "Project",
+      "environmentVariables": {
+        "DOTNET_ENVIRONMENT": "Development"
+      }
+    }
+  }
+}

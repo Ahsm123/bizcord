@@ -63,6 +63,24 @@ services:
       - workspace-api
       - vault
 
+  # Stand-in for the Message service in the upload saga (docs/upload-saga.md).
+  # MessageStub__Behavior can be Succeed, Fail or NoReply to try each path.
+  message-stub:
+    image: bizcord-message-stub
+    build:
+      context: .
+      dockerfile: src/Bizcord.MessageStub/Dockerfile
+    environment:
+      DOTNET_ENVIRONMENT: Development
+      VAULT_ADDR: http://vault:8200
+      VAULT_TOKEN: ${MESSAGE_STUB_VAULT_TOKEN}
+      MessageStub__Behavior: ${MESSAGE_STUB_BEHAVIOR:-Succeed}
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      vault:
+        condition: service_healthy
+
   rabbitmq:
     image: rabbitmq:4-management
     restart: always

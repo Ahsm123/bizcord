@@ -14,6 +14,8 @@ vault kv put secret/workspace-api \
   'ConnectionStrings:Database=Host=workspace-db;Port=5432;Database=workspace;Username=postgres;Password=postgres' \
   'ConnectionStrings:Messaging=host=rabbitmq;username=kalo;password=kalo' >/dev/null
 
+vault kv put secret/message-stub   'ConnectionStrings:Messaging=host=rabbitmq;username=kalo;password=kalo' >/dev/null
+
 # Shared by every service that issues or checks tokens
 if ! vault kv get secret/shared/jwt >/dev/null 2>&1; then
   vault kv put secret/shared/jwt "Jwt:IssuerSigningKey=$(head -c 48 /dev/urandom | base64 | tr -d '\n')" >/dev/null
@@ -22,6 +24,10 @@ fi
 vault policy write workspace-api - >/dev/null <<'EOF'
 path "secret/data/workspace-api" { capabilities = ["read"] }
 path "secret/data/shared/jwt" { capabilities = ["read"] }
+EOF
+
+vault policy write message-stub - >/dev/null <<'EOF'
+path "secret/data/message-stub" { capabilities = ["read"] }
 EOF
 
 vault policy write gateway - >/dev/null <<'EOF'
@@ -34,3 +40,4 @@ token() { vault token create -policy="$1" -no-default-policy -ttl=768h -field=to
 echo "# Paste into .env (git ignores it)"
 echo "WORKSPACE_API_VAULT_TOKEN=$(token workspace-api)"
 echo "GATEWAY_VAULT_TOKEN=$(token gateway)"
+echo "MESSAGE_STUB_VAULT_TOKEN=$(token message-stub)"
