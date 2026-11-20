@@ -3,6 +3,7 @@ using Bizcord.WorkspaceApi.Models;
 using Bizcord.WorkspaceApi.Requests;
 using Bizcord.WorkspaceApi.Services;
 using Bizcord.Contracts.Workspaces;
+using System.ComponentModel.DataAnnotations;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Bizcord.WorkspaceApi.Controllers;
@@ -12,12 +13,16 @@ namespace Bizcord.WorkspaceApi.Controllers;
 public class WorkspacesController(IWorkspaceService workspaceService)
     : ControllerBase
 {
+    // Send an Idempotency-Key header to make a retry safe: the same key returns the workspace from the first
+    // request instead of creating another one (#67). Without the header, or with an empty one, every request
+    // creates a workspace. Keys are up to 100 characters.
     [HttpPost]
     [ProducesResponseType(StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<ActionResult<WorkspaceDto>> Create(CreateWorkspaceRequest request, CancellationToken ct)
+    public async Task<ActionResult<WorkspaceDto>> Create(CreateWorkspaceRequest request,
+        [FromHeader(Name = "Idempotency-Key"), MaxLength(100)] string? idempotencyKey, CancellationToken ct)
     {
-        var workspace = await workspaceService.CreateAsync(User.GetUserId(), request.Name, ct);
+        var workspace = await workspaceService.CreateAsync(User.GetUserId(), request.Name, ct, idempotencyKey);
         var dto = workspace.ToDto();
         return CreatedAtAction(nameof(GetById), new { id = workspace.Id }, dto);
     }

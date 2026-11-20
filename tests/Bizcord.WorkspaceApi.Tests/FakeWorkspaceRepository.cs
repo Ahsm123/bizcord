@@ -32,6 +32,20 @@ public class FakeWorkspaceRepository : IWorkspaceRepository
     // The real version check is tested against Postgres, since the fake hands out the same instance to every load.
     public bool conflictOnNextSave;
 
+    public readonly Dictionary<(Guid UserId, string Key), Guid> idempotencyKeys = new();
+
+    public async Task<Guid> CreateAsync(Workspace workspace, Guid userId, string idempotencyKey, CancellationToken ct)
+    {
+        if (idempotencyKeys.TryGetValue((userId, idempotencyKey), out var existing))
+        {
+            return existing;
+        }
+
+        await SaveAsync(workspace, ct);
+        idempotencyKeys[(userId, idempotencyKey)] = workspace.Id;
+        return workspace.Id;
+    }
+
     public Task<bool> SaveAsync(Workspace workspace, CancellationToken ct)
     {
         if (conflictOnNextSave)

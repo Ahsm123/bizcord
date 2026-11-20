@@ -6,7 +6,8 @@ namespace Bizcord.WorkspaceApi.Services;
 
 public interface IWorkspaceService
 {
-    Task<Workspace> CreateAsync(Guid ownerId, string name, CancellationToken ct);
+    // With an idempotency key, a repeated call returns the workspace from the first call instead of a new one (#67)
+    Task<Workspace> CreateAsync(Guid ownerId, string name, CancellationToken ct, string? idempotencyKey = null);
     Task<Result<Workspace>> GetByIdAsync(Guid id, Guid userId, CancellationToken ct);
     Task<IReadOnlyList<WorkspaceDto>> GetAllAsync(Guid userId, CancellationToken ct);
     Task<Result> UpdateAsync(Guid actingUserId, Guid workspaceId, string newName, CancellationToken ct);
