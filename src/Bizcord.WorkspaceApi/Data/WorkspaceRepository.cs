@@ -36,6 +36,60 @@ internal sealed class WorkspaceRepository(NpgsqlDataSource dataSource) : IWorksp
         await using var connection = await dataSource.OpenConnectionAsync(ct);
         await using var tx = await connection.BeginTransactionAsync(ct);
 
+        if (!await SaveInTransactionAsync(connection, tx, workspace, ct))
+        {
+            await tx.RollbackAsync(ct);
+            return false;
+        }
+
+        await tx.CommitAsync(ct);
+        workspace.Version++;
+        return true;
+    }
+
+    public async Task<Guid> CreateAsync(Workspace workspace, Guid userId, string idempotencyKey, CancellationToken ct)
+    {
+        await using var connection = await dataSource.OpenConnectionAsync(ct);
+        await using var tx = await connection.BeginTransactionAsync(ct);
+
+        if (!await SaveInTransactionAsync(connection, tx, workspace, ct))
+        {
+            throw new InvalidOperationException($"Workspace {workspace.Id} already exists");
+        }
+
+        // The key is saved in the same transaction as the workspace (#67). A request with the same key at the same
+        // time waits here until this one commits, and then finds the key taken.
+        var claimed = await connection.ExecuteAsync(new CommandDefinition(
+            """
+            insert into workspace_idempotency_keys (user_id, idempotency_key, workspace_id)
+            values (@userId, @idempotencyKey, @workspaceId)
+            on conflict (user_id, idempotency_key) do nothing
+            """,
+            new { userId, idempotencyKey, workspaceId = workspace.Id }, transaction: tx, cancellationToken: ct));
+
+        if (claimed == 0)
+        {
+            // Already used: undo this workspace and hand back the one the key created the first time
+            var existing = await connection.ExecuteScalarAsync<Guid>(new CommandDefinition(
+                """
+                select workspace_id from workspace_idempotency_keys
+                where user_id = @userId and idempotency_key = @idempotencyKey
+                """,
+                new { userId, idempotencyKey }, transaction: tx, cancellationToken: ct));
+            await tx.RollbackAsync(ct);
+            return existing;
+        }
+
+        await tx.CommitAsync(ct);
+        workspace.Version++;
+        return workspace.Id;
+    }
+
+    // Writes the workspace inside the caller's transaction. False when the version check fails (#68),
+    // and then the caller must roll back.
+    private static async Task<bool> SaveInTransactionAsync(NpgsqlConnection connection, NpgsqlTransaction tx,
+        Workspace workspace, CancellationToken ct)
+    {
         // Optimistic concurrency (#68): only the request that still has the current version can save, and it bumps
         // the version. The row is locked until commit, so a parallel save waits and then sees the new version.
         // A new workspace is inserted with version 1.
@@ -49,7 +103,6 @@ internal sealed class WorkspaceRepository(NpgsqlDataSource dataSource) : IWorksp
 
         if (saved == 0)
         {
-            await tx.RollbackAsync(ct);
             return false;
         }
 
@@ -93,8 +146,6 @@ internal sealed class WorkspaceRepository(NpgsqlDataSource dataSource) : IWorksp
             transaction: tx,
             cancellationToken: ct));
 
-        await tx.CommitAsync(ct);
-        workspace.Version++;
         return true;
     }
 

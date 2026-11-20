@@ -41,6 +41,20 @@ sjældne, så det er billigere at lade den ene prøve igen.
 Kvoten (#78) bliver ikke låst på den her måde. Den ændres med sin egen atomiske SQL-update og rører ikke `version`, så
 en upload og en omdøbning af workspacet ikke giver konflikt med hinanden.
 
+## Idempotent oprettelse af workspaces (#67)
+
+Bliver `POST api/v1/workspaces` sendt igen, fx fordi klienten ikke fik svaret, bliver der oprettet to workspaces.
+Navnet er ikke unikt, så det kan databasen ikke opdage alene.
+
+Klienten kan derfor sende en `Idempotency-Key`. Nøglen gemmes i samme transaktion som workspacet, med en unik
+nøgle på (bruger, nøgle). Kommer den samme nøgle igen, får klienten det første workspace tilbage, og der oprettes ikke
+noget nyt. Kommer to requests med samme nøgle på samme tid, venter den ene på den andens commit og får så det samme
+workspace.
+
+Nøglen gælder pr. bruger, så to brugere ikke kan ramme hinandens nøgler. Headeren er valgfri, så eksisterende
+klienter, Postman-testene og GraphQL virker som før. En retry med samme nøgle men et andet navn får også det første
+workspace. Vi tjekker ikke, om indholdet er det samme.
+
 ## Saga: upload af en fil, der er for stor til kvoten
 
 En saga er en proces, der går på tværs af flere services, hvor hver service laver sin egen del i sin egen database.

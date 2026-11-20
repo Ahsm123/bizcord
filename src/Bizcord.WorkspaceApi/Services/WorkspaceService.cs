@@ -9,11 +9,25 @@ namespace Bizcord.WorkspaceApi.Services;
 public class WorkspaceService(IWorkspaceRepository workspaceRepository, IMessageClient messageClient)
     : IWorkspaceService
 {
-    public async Task<Workspace> CreateAsync(Guid ownerId, string name, CancellationToken ct)
+    public async Task<Workspace> CreateAsync(Guid ownerId, string name, CancellationToken ct,
+        string? idempotencyKey = null)
     {
         // TODO: verify the owner exists in the profile service before creating,
         // TODO: and return null when it does not. Blocked until the profile service exists.
         var workspace = Workspace.Create(ownerId, name);
+        if (idempotencyKey is not null)
+        {
+            var id = await workspaceRepository.CreateAsync(workspace, ownerId, idempotencyKey, ct);
+            if (id == workspace.Id)
+            {
+                return workspace;
+            }
+
+            // A retry: the key already created a workspace, so that one is returned and nothing new is created
+            return await workspaceRepository.GetByIdAsync(id, ct)
+                   ?? throw new InvalidOperationException($"Workspace {id} for the idempotency key is gone");
+        }
+
         if (!await workspaceRepository.SaveAsync(workspace, ct))
         {
             // A new workspace gets a new id, so nothing else can have saved it first

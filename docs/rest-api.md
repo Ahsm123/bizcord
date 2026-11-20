@@ -40,6 +40,11 @@ and 409 if the name is already taken in that workspace.
 Renaming a workspace or creating a channel returns 409 `Workspace.ConcurrentChange` when another request changed the
 same workspace at the same time. Nothing is saved, and the client can try again.
 
+`POST api/v1/workspaces` takes an optional `Idempotency-Key` header (up to 100 characters). A retry with the same key
+from the same user returns the workspace from the first request, with 201 again, and creates nothing new. Without the
+header every request creates a workspace. Clients that retry, or a gateway that retries, should send a new key per
+workspace they mean to create.
+
 ## FileApi
 
 Both endpoints require `role: user`, like WorkspaceApi.
