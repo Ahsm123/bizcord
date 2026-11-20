@@ -37,6 +37,9 @@ member and 404 for other.
 Only admins can create channels. Creating a channel returns 403 for non-admins, 404 if the workspace doesn't exist
 and 409 if the name is already taken in that workspace.
 
+Renaming a workspace or creating a channel returns 409 `Workspace.ConcurrentChange` when another request changed the
+same workspace at the same time. Nothing is saved, and the client can try again.
+
 ## FileApi
 
 Both endpoints require `role: user`, like WorkspaceApi.

@@ -10,4 +10,5 @@ public static class WorkspaceErrors
     public static readonly Error ChannelNotFound = new("Workspace.ChannelNotFound", "Channel was not found");
     public static readonly Error NotAuthorized = new("Workspace.NotAuthorized", "Missing permission for this action");
     public static readonly Error NotFound = new("Workspace.NotFound", "Workspace was not found");
+    public static readonly Error ConcurrentChange = new("Workspace.ConcurrentChange", "The workspace was changed by another request at the same time, try again");
 }

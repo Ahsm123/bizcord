@@ -1,4 +1,4 @@
-﻿using Bizcord.Contracts.Workspaces;
+using Bizcord.Contracts.Workspaces;
 using Bizcord.WorkspaceApi.Extensions;
 
 namespace Bizcord.WorkspaceApi.Models;
@@ -13,6 +13,10 @@ public class Workspace
 
     public Guid Id { get; private set; }
     public string Name { get; private set; }
+
+    // The version in the database when the workspace was loaded, and 0 for a new one that was never saved.
+    // Saving only succeeds when the database still has this version, so two requests can't overwrite each other.
+    public int Version { get; internal set; }
     private readonly List<Channel> _channels = [];
     public IReadOnlyList<Channel> Channels => _channels;
     private readonly List<Member> _members = [];
@@ -30,10 +34,10 @@ public class Workspace
 
     // Rebuilds a workspace from stored state. No rules and no authorization run
     // here, this data was already validated when it was written.
-    internal static Workspace Rehydrate(Guid id, string name, IEnumerable<Member> members,
+    internal static Workspace Rehydrate(Guid id, string name, int version, IEnumerable<Member> members,
         IEnumerable<Channel> channels)
     {
-        var workspace = new Workspace(id, name);
+        var workspace = new Workspace(id, name) { Version = version };
         workspace._members.AddRange(members);
         workspace._channels.AddRange(channels);
         return workspace;

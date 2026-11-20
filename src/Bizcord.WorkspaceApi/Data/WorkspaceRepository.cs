@@ -10,7 +10,7 @@ internal sealed class WorkspaceRepository(NpgsqlDataSource dataSource) : IWorksp
     public async Task<Workspace?> GetByIdAsync(Guid id, CancellationToken ct)
     {
         const string sql = """
-                           select name from workspaces where id = @id;
+                           select name, version from workspaces where id = @id;
                            select user_id as UserId, role from members where workspace_id = @id;
                            select id, name from channels where workspace_id = @id;
                            """;
@@ -19,8 +19,8 @@ internal sealed class WorkspaceRepository(NpgsqlDataSource dataSource) : IWorksp
         await using var results = await connection.QueryMultipleAsync(
             new CommandDefinition(sql, new { id }, cancellationToken: ct));
 
-        var name = await results.ReadSingleOrDefaultAsync<string>();
-        if (name is null)
+        var row = await results.ReadSingleOrDefaultAsync<WorkspaceRow>();
+        if (row is null)
         {
             return null;
         }
@@ -28,22 +28,30 @@ internal sealed class WorkspaceRepository(NpgsqlDataSource dataSource) : IWorksp
         var members = await results.ReadAsync<Member>();
         var channels = await results.ReadAsync<Channel>();
 
-        return Workspace.Rehydrate(id, name, members, channels);
+        return Workspace.Rehydrate(id, row.Name, row.Version, members, channels);
     }
 
-    public async Task SaveAsync(Workspace workspace, CancellationToken ct)
+    public async Task<bool> SaveAsync(Workspace workspace, CancellationToken ct)
     {
         await using var connection = await dataSource.OpenConnectionAsync(ct);
         await using var tx = await connection.BeginTransactionAsync(ct);
 
-        await connection.ExecuteAsync(new CommandDefinition(
-            """
-            insert into workspaces (id, name) values (@Id, @Name)
-            on conflict (id) do update set name = excluded.name
-            """,
-            new { workspace.Id, workspace.Name },
+        // Optimistic concurrency (#68): only the request that still has the current version can save, and it bumps
+        // the version. The row is locked until commit, so a parallel save waits and then sees the new version.
+        // A new workspace is inserted with version 1.
+        var saved = await connection.ExecuteAsync(new CommandDefinition(
+            workspace.Version == 0
+                ? "insert into workspaces (id, name, version) values (@Id, @Name, 1) on conflict (id) do nothing"
+                : "update workspaces set name = @Name, version = version + 1 where id = @Id and version = @Version",
+            new { workspace.Id, workspace.Name, workspace.Version },
             transaction: tx,
             cancellationToken: ct));
+
+        if (saved == 0)
+        {
+            await tx.RollbackAsync(ct);
+            return false;
+        }
 
         // We need to delete the members in the db and insert them from the workspace list,
         // since dapper does not have change tracking
@@ -86,6 +94,8 @@ internal sealed class WorkspaceRepository(NpgsqlDataSource dataSource) : IWorksp
             cancellationToken: ct));
 
         await tx.CommitAsync(ct);
+        workspace.Version++;
+        return true;
     }
 
     // Read-only projection, so it skips loading members and channels for every workspace.
@@ -145,5 +155,11 @@ internal sealed class WorkspaceRepository(NpgsqlDataSource dataSource) : IWorksp
         await using var connection = await dataSource.OpenConnectionAsync(ct);
         return await connection.ExecuteScalarAsync<bool>(new CommandDefinition(sql, new { channelId, userId },
             cancellationToken: ct));
+    }
+
+    private sealed class WorkspaceRow
+    {
+        public string Name { get; init; } = "";
+        public int Version { get; init; }
     }
 }

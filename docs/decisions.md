@@ -25,6 +25,22 @@ kunne man kalde WorkspaceApi direkte inde i compose network og springe tjekket o
 Alle services, der tjekker tokens, har signing key. Hvis én af dem bliver kompromitteret, kan den lave gyldige
 tokens. Faucet'en udsteder tokens med en hvilken som helst rolle, så den må kun køre i development.
 
+## Samtidige ændringer af et workspace (#68)
+
+Et workspace bliver gemt ved at loade hele aggregatet, ændre det og gemme det igen. Gemmer to requests det samme
+workspace på samme tid, vinder den sidste, og den første ændring forsvinder, fx en kanal.
+
+Vi har valgt optimistisk låsning. Hvert workspace har en `version`, og man kan kun gemme, hvis versionen i databasen
+stadig er den, man loadede. Så bliver den talt én op. Den request, der kommer for sent, får 409
+(`Workspace.ConcurrentChange`) og kan prøve igen.
+
+Pessimistisk låsning (`select ... for update`) ville holde en lås i databasen, mens requesten kører, og alle andre
+ville vente. Med vores timeout på 2 sekunder (#65) ville det give timeouts i stedet for et tydeligt svar. Konflikter er
+sjældne, så det er billigere at lade den ene prøve igen.
+
+Kvoten (#78) bliver ikke låst på den her måde. Den ændres med sin egen atomiske SQL-update og rører ikke `version`, så
+en upload og en omdøbning af workspacet ikke giver konflikt med hinanden.
+
 ## Saga: upload af en fil, der er for stor til kvoten
 
 En saga er en proces, der går på tværs af flere services, hvor hver service laver sin egen del i sin egen database.
