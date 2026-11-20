@@ -16,7 +16,8 @@ Workspace Service:
     Channels are not their own service since they only exist inside a workspace and use the same members and roles.
     This handles authz because the roles are per workspace, so it lives here instead of with authn in the idp.
 
-Workspaces, channels, members, roles, permissions
+Workspaces, channels, members, roles, permissions, and each workspace's storage quota
+(see the [upload saga](upload-saga.md)).
 
 **Not:** messages, profile data, authn.
 
@@ -69,8 +70,13 @@ Other services only reference Workspace data by the ID, and Workspace does the s
 - members.user_id is just an ID and not a foreign key, since users belong to Profile.
 
 Workspace has these tables:
-- `workspaces`, `members`, `channels`, `channel_activity`
+- `workspaces` (including the storage limit and used space), `members`, `channels`, `channel_activity`,
+  `quota_reservations`
 
 Example: `channel_activity` stores when a channel last had a message. Workspace owns it but the activity happens in Message.
 Message doesnt write to the table, but publishes an `MessagePostedEvent`, and Workspace updates the row when it consumes tha event.
 The row is created with a channel and after that its only updated from that event.
+
+Example: the storage quota belongs to the workspace, so Workspace owns it, even though the uploads live in File.
+File asks Workspace to reserve space with a `ReserveQuota` command, and Workspace answers with an event.
+`quota_reservations` has one row per upload saga, so a repeated command doesn't reserve the space twice.
