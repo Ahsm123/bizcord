@@ -14,7 +14,11 @@ public class WorkspaceService(IWorkspaceRepository workspaceRepository, IMessage
         // TODO: verify the owner exists in the profile service before creating,
         // TODO: and return null when it does not. Blocked until the profile service exists.
         var workspace = Workspace.Create(ownerId, name);
-        await workspaceRepository.SaveAsync(workspace, ct);
+        if (!await workspaceRepository.SaveAsync(workspace, ct))
+        {
+            // A new workspace gets a new id, so nothing else can have saved it first
+            throw new InvalidOperationException($"Workspace {workspace.Id} already exists");
+        }
 
         return workspace;
     }
@@ -55,9 +59,10 @@ public class WorkspaceService(IWorkspaceRepository workspaceRepository, IMessage
             return result;
         }
 
-        await workspaceRepository.SaveAsync(workspace, ct);
-
-        return Result.Success();
+        // False when another request changed the workspace after it was loaded here (#68)
+        return await workspaceRepository.SaveAsync(workspace, ct)
+            ? Result.Success()
+            : Result.Failure(WorkspaceErrors.ConcurrentChange);
     }
 
     public async Task<Result> DeleteAsync(Guid actingUserId, Guid workspaceId, CancellationToken ct)
@@ -95,8 +100,12 @@ public class WorkspaceService(IWorkspaceRepository workspaceRepository, IMessage
             return Result<Channel>.Failure(result.Error);
         }
 
-        // Saving also creates the channel's channel_activity row, so MessagePostedEvents for it get recorded
-        await workspaceRepository.SaveAsync(workspace, ct);
+        // Saving also creates the channel's channel_activity row, so MessagePostedEvents for it get recorded.
+        // False when another request changed the workspace after it was loaded here (#68).
+        if (!await workspaceRepository.SaveAsync(workspace, ct))
+        {
+            return Result<Channel>.Failure(WorkspaceErrors.ConcurrentChange);
+        }
 
         return Result<Channel>.Success(workspace.Channels.Single(c => c.Id == channelId));
     }

@@ -25,7 +25,8 @@ public static class ResultExtensions
             || error == WorkspaceErrors.CallerNotAMember => StatusCodes.Status403Forbidden,
         _ when error == WorkspaceErrors.AlreadyMember
             || error == WorkspaceErrors.DuplicateChannelName
-            || error == WorkspaceErrors.LastAdmin => StatusCodes.Status409Conflict,
+            || error == WorkspaceErrors.LastAdmin
+            || error == WorkspaceErrors.ConcurrentChange => StatusCodes.Status409Conflict,
         _ => StatusCodes.Status500InternalServerError,
     };
 }

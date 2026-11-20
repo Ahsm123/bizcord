@@ -28,10 +28,20 @@ public class FakeWorkspaceRepository : IWorkspaceRepository
         return workspaces.GetValueOrDefault(id);
     }
 
-    public Task SaveAsync(Workspace workspace, CancellationToken ct)
+    // Set to make the next save fail as if another request changed the workspace first (#68).
+    // The real version check is tested against Postgres, since the fake hands out the same instance to every load.
+    public bool conflictOnNextSave;
+
+    public Task<bool> SaveAsync(Workspace workspace, CancellationToken ct)
     {
+        if (conflictOnNextSave)
+        {
+            conflictOnNextSave = false;
+            return Task.FromResult(false);
+        }
+
         workspaces[workspace.Id] = workspace;
-        return Task.CompletedTask;
+        return Task.FromResult(true);
     }
 
     public Task<IReadOnlyList<WorkspaceDto>> ListForUserAsync(Guid userId, CancellationToken ct)
