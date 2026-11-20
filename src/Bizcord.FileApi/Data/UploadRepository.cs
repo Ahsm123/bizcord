@@ -37,6 +37,36 @@ internal sealed class UploadRepository(NpgsqlDataSource dataSource) : IUploadRep
         return row?.ToUpload();
     }
 
+    public async Task<bool> MarkMessageRequestedAsync(Guid id, DateTime now, CancellationToken ct)
+    {
+        const string sql = """
+                           update uploads set message_requested = true, updated_at = @now
+                           where id = @id and status = 'Pending'
+                           """;
+
+        await using var connection = await dataSource.OpenConnectionAsync(ct);
+        return await connection.ExecuteAsync(new CommandDefinition(sql, new { id, now }, cancellationToken: ct)) > 0;
+    }
+
+    public async Task<bool> CompleteAsync(Guid id, UploadStatus status, string? rejectionReason, DateTime now,
+        CancellationToken ct)
+    {
+        if (status == UploadStatus.Pending)
+        {
+            throw new ArgumentException("An upload can only be completed as Confirmed or Rejected", nameof(status));
+        }
+
+        const string sql = """
+                           update uploads set status = @status, rejection_reason = @rejectionReason, updated_at = @now
+                           where id = @id and status = 'Pending'
+                           """;
+
+        await using var connection = await dataSource.OpenConnectionAsync(ct);
+        var rows = await connection.ExecuteAsync(new CommandDefinition(sql,
+            new { id, status = status.ToString(), rejectionReason, now }, cancellationToken: ct));
+        return rows > 0;
+    }
+
     private static UploadRow ToRow(Upload u) => new()
     {
         Id = u.Id, UploaderId = u.UploaderId, WorkspaceId = u.WorkspaceId, ChannelId = u.ChannelId,

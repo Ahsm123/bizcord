@@ -28,4 +28,8 @@ public sealed record Upload(
         string? message, DateTime now) =>
         new(Guid.NewGuid(), uploaderId, workspaceId, channelId, fileName.Trim(), sizeBytes, message?.Trim() ?? "",
             UploadStatus.Pending, MessageRequested: false, RejectionReason: null, now, now);
+
+    // The text of the message that is posted in the channel, with a reference to the file
+    public string MessageContent() =>
+        string.IsNullOrEmpty(Message) ? $"[file] {FileName}" : $"{Message}\n[file] {FileName}";
 }

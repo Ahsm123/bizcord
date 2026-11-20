@@ -98,6 +98,21 @@ message is only posted once.
   - Message posts at most once per `SagaId`.
 - A reply that arrives after the upload is already `Confirmed` or `Rejected` is logged and ignored.
 
+## Try it
+
+With the stack running (`docker compose up -d`), get a token from the faucet with the scopes `workspace.write`,
+`file.write` and `file.read`, create a workspace, and `POST api/v1/uploads` through the gateway. Then follow the upload
+with `GET api/v1/uploads/{id}`:
+
+| Path                     | How                                                                                      | Result                                             |
+|--------------------------|------------------------------------------------------------------------------------------|----------------------------------------------------|
+| Happy path               | An upload that fits the quota (100 MB by default)                                         | `Confirmed`                                        |
+| Quota exceeded           | `sizeBytes` bigger than the quota                                                        | `Rejected`, nothing reserved                       |
+| Message can't post       | `MESSAGE_STUB_BEHAVIOR=Fail docker compose up -d message-stub`                           | `Rejected`, the quota is released again           |
+| Message never answers    | `MESSAGE_STUB_BEHAVIOR=NoReply docker compose up -d message-stub`                        | Stays `Pending` until the timeout job handles it   |
+
+`docker compose up -d message-stub` without the variable sets it back to `Succeed`.
+
 ## Limitations
 
 - FileApi trusts the `workspaceId` and `channelId` in the request. It doesn't check that the user is a member of the
