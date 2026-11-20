@@ -21,7 +21,8 @@ bizcord/
 │   ├── Bizcord.Gateway.Postman/  # Postman collection that tests the gateway against the running stack
 │   ├── Bizcord.WorkspaceApi.Tests/
 │   └── Bizcord.MessageClient.Tests/
-├── docs/                         # diagrams, bounded contexts, events and REST API
+├── docs/                         # diagrams, bounded contexts, events, REST API, the upload saga and Vault
+├── vault/                        # Vault config and the development setup script
 ├── compose.yaml
 └── Bizcord.slnx
 ```
@@ -47,14 +48,21 @@ How the services talk to each other:
 - [Events](docs/events.md): which events each service publishes and consumes
 - [REST API](docs/rest-api.md): endpoints and the `X-User-Id` header
 
+## Running it
+
+The services read their connection strings and the JWT signing key from Vault. The first time on a new machine,
+follow [docs/vault.md](docs/vault.md) to set up Vault and `.env`, then run `docker compose up -d`.
+
 ## Ports
 
-| Service       | Host port                |
-|---------------|--------------------------|
-| gateway       | 8080                     |
-| workspace-api | 5001                     |
-| workspace-db  | 5433                     |
-| rabbitmq      | 5672, 15672 (management) |
+Only the gateway is reachable for clients. The services themselves have no host port (#72).
+
+| Service      | Host port                |
+|--------------|--------------------------|
+| gateway      | 8080                     |
+| workspace-db | 5433                     |
+| rabbitmq     | 5672, 15672 (management) |
+| vault        | 8200 (localhost only)    |
 
 
 ## Collaboration

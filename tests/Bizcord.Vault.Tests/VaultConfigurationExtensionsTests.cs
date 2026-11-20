@@ -35,14 +35,38 @@ public class VaultConfigurationExtensionsTests
         Assert.Null(handler.Request);
     }
 
-    [Fact]
-    public async Task Denied_access_fails_startup()
+    [Theory]
+    [InlineData(HttpStatusCode.Forbidden, "denied access to secret/workspace-api")]
+    [InlineData(HttpStatusCode.ServiceUnavailable, "sealed")]
+    [InlineData(HttpStatusCode.NotFound, "secret/workspace-api does not exist")]
+    public async Task Vault_errors_fail_startup_with_a_clear_message(HttpStatusCode status, string message)
     {
         var config = ConfigWith(token: "wrong-token");
-        var handler = new FakeVaultHandler(HttpStatusCode.Forbidden, """{ "errors": ["permission denied"] }""");
+        var handler = new FakeVaultHandler(status, """{ "errors": [] }""");
 
-        await Assert.ThrowsAsync<HttpRequestException>(
+        var error = await Assert.ThrowsAsync<InvalidOperationException>(
             () => config.AddVaultSecretsAsync("workspace-api", handler));
+
+        Assert.Contains(message, error.Message);
+        Assert.Null(config["ConnectionStrings:Database"]);
+    }
+
+    [Fact]
+    public async Task Unreachable_vault_fails_startup_with_its_address()
+    {
+        var config = ConfigWith(token: "app-token");
+
+        var error = await Assert.ThrowsAsync<InvalidOperationException>(
+            () => config.AddVaultSecretsAsync("workspace-api", new UnreachableHandler()));
+
+        Assert.Contains("http://vault:8200", error.Message);
+    }
+
+    private sealed class UnreachableHandler : HttpMessageHandler
+    {
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request,
+            CancellationToken cancellationToken) =>
+            throw new HttpRequestException("Connection refused");
     }
 
     private static ConfigurationManager ConfigWith(string? token)
