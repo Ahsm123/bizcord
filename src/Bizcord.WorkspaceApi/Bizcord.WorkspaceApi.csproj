@@ -6,11 +6,17 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <RootNamespace>Bizcord.WorkspaceApi</RootNamespace>
     <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
+    <!-- HotChocolate's global usings bring in an Error and a Result<T> that clash with the domain's.
+         The GraphQL files use HotChocolate explicitly instead. -->
+    <HotChocolateImplicitUsings>disable</HotChocolateImplicitUsings>
+    <HotChocolateCompositeImplicitUsings>disable</HotChocolateCompositeImplicitUsings>
   </PropertyGroup>
 
   <ItemGroup>
     <PackageReference Include="Dapper" Version="2.1.86" />
     <PackageReference Include="dbup-postgresql" Version="7.0.1" />
+    <PackageReference Include="HotChocolate.AspNetCore" Version="16.7.6" />
+    <PackageReference Include="HotChocolate.AspNetCore.Authorization" Version="16.7.6" />
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="10.0.15" />
     <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" Version="10.0.12" />
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="10.0.11" />

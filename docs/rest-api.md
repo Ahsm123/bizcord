@@ -17,6 +17,7 @@ Same paths as WorkspaceApi and FileApi. No token or an invalid token returns 401
 | POST   | api/v1/workspaces/{id}/channels         | `channel.write`          |
 | GET    | api/v1/workspaces/{id}/channels         | `channel.read`           |
 | GET    | internal/channels/{id}/members/{userId} | `role: internal-service` |
+| POST   | graphql                                 | see [graphql.md](graphql.md) |
 | POST   | api/v1/uploads                          | `file.write`             |
 | GET    | api/v1/uploads/{id}                     | `file.read`              |
 

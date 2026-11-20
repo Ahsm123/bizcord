@@ -5,6 +5,7 @@ using Bizcord.Vault;
 using Bizcord.WorkspaceApi.Authorization;
 using Bizcord.WorkspaceApi.Data;
 using Bizcord.WorkspaceApi.Extensions;
+using Bizcord.WorkspaceApi.GraphQL;
 using Bizcord.WorkspaceApi.Services;
 using DbUp;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -55,6 +56,13 @@ builder.Services.AddMessaging(builder.Configuration, Assembly.GetExecutingAssemb
 builder.Services.AddControllers();
 builder.Services.AddOpenApi();
 
+// GraphQL on /graphql, a presentation layer next to the REST controllers that reuses the same services
+builder.Services.AddGraphQLServer()
+    .AddAuthorization()
+    .AddQueryType<WorkspaceQueries>()
+    .AddMutationType<WorkspaceMutations>()
+    .ModifyRequestOptions(o => o.IncludeExceptionDetails = builder.Environment.IsDevelopment());
+
 builder.Services.AddRequestTimeouts(options =>
     options.DefaultPolicy = new RequestTimeoutPolicy { Timeout = TimeSpan.FromSeconds(2) });
 
@@ -82,6 +90,7 @@ builder.Services.AddAuthentication()
 // Every endpoint requires a user token unless it names its own policy, so a new endpoint can't be left open
 builder.Services.AddAuthorizationBuilder()
     .AddPolicy(Policies.InternalService, p => p.RequireRole(Policies.InternalService))
+    .AddScopePolicies()
     .SetFallbackPolicy(new AuthorizationPolicyBuilder()
         .RequireRole(Policies.User)
         .RequireAssertion(ctx => ctx.User.HasUserId())
@@ -100,5 +109,6 @@ app.UseAuthorization();
 app.UseRequestTimeouts();
 app.UseHttpsRedirection();
 app.MapControllers();
+app.MapGraphQL();
 app.Run();
 return 0;

@@ -10,19 +10,22 @@ public static class ResultExtensions
 
     public static ActionResult ToProblem(this Error error)
     {
-        var status = error switch
-        {
-            _ when error == WorkspaceErrors.NotFound
-                || error == WorkspaceErrors.MemberNotFound
-                || error == WorkspaceErrors.ChannelNotFound => StatusCodes.Status404NotFound,
-            _ when error == WorkspaceErrors.NotAuthorized
-                || error == WorkspaceErrors.CallerNotAMember => StatusCodes.Status403Forbidden,
-            _ when error == WorkspaceErrors.AlreadyMember
-                || error == WorkspaceErrors.DuplicateChannelName
-                || error == WorkspaceErrors.LastAdmin => StatusCodes.Status409Conflict,
-            _ => StatusCodes.Status500InternalServerError,
-        };
+        var status = error.ToStatusCode();
         return new ObjectResult(new ProblemDetails { Status = status, Title = error.Code, Detail = error.Description })
             { StatusCode = status };
     }
+
+    // Shared by REST (ProblemDetails) and GraphQL (the status extension on the error)
+    public static int ToStatusCode(this Error error) => error switch
+    {
+        _ when error == WorkspaceErrors.NotFound
+            || error == WorkspaceErrors.MemberNotFound
+            || error == WorkspaceErrors.ChannelNotFound => StatusCodes.Status404NotFound,
+        _ when error == WorkspaceErrors.NotAuthorized
+            || error == WorkspaceErrors.CallerNotAMember => StatusCodes.Status403Forbidden,
+        _ when error == WorkspaceErrors.AlreadyMember
+            || error == WorkspaceErrors.DuplicateChannelName
+            || error == WorkspaceErrors.LastAdmin => StatusCodes.Status409Conflict,
+        _ => StatusCodes.Status500InternalServerError,
+    };
 }

@@ -52,7 +52,9 @@ What each service owns and does not own: [docs/bounded-contexts.md](docs/bounded
 How the services talk to each other:
 
 - [Events](docs/events.md): which events each service publishes and consumes
-- [REST API](docs/rest-api.md): endpoints and the `X-User-Id` header
+- [REST API](docs/rest-api.md): endpoints, tokens and scopes
+- [GraphQL](docs/graphql.md): the GraphQL endpoint in WorkspaceApi for frontend clients
+- [Upload saga](docs/upload-saga.md): how File, Workspace and Message work together on an upload
 
 ## Running it
 

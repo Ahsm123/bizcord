@@ -51,20 +51,30 @@ public class TestApiFactory : WebApplicationFactory<Program>
     public static AuthenticationHeaderValue UserAuthHeader(Guid userId) =>
         new("Bearer", CreateToken("user", userId.ToString()));
 
+    // GraphQL checks the scope per field, so its tests send the scopes too, separated by spaces
+    public static AuthenticationHeaderValue UserAuthHeader(Guid userId, string scope) =>
+        new("Bearer", CreateToken("user", userId.ToString(), scope: scope));
+
     // sub defaults to a random user id, pass a value to test what the API does with a bad one
     public static string CreateToken(string role, string? sub = null, string issuer = Issuer,
-        string audience = Audience)
+        string audience = Audience, string? scope = null)
     {
+        var claims = new Dictionary<string, object>
+        {
+            ["sub"] = sub ?? Guid.NewGuid().ToString(),
+            ["role"] = role
+        };
+        if (scope is not null)
+        {
+            claims["scope"] = scope;
+        }
+
         var descriptor = new SecurityTokenDescriptor
         {
             Issuer = issuer,
             Audience = audience,
             Expires = DateTime.UtcNow.AddMinutes(5),
-            Claims = new Dictionary<string, object>
-            {
-                ["sub"] = sub ?? Guid.NewGuid().ToString(),
-                ["role"] = role
-            },
+            Claims = claims,
             SigningCredentials = new SigningCredentials(
                 new SymmetricSecurityKey(Encoding.UTF8.GetBytes(SigningKey)), SecurityAlgorithms.HmacSha256)
         };
