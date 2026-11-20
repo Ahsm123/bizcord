@@ -113,6 +113,23 @@
       ]
     },
     {
+      "Key": "workspace-graphql",
+      "UpstreamPathTemplate": "/graphql",
+      "UpstreamHttpMethod": ["POST", "GET"],
+      "AuthenticationOptions": {
+        "AuthenticationProviderKeys": ["Bearer"],
+        "AllowedScopes": ["workspace.read", "workspace.write", "channel.write"]
+      },
+      "DownstreamPathTemplate": "/graphql",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "workspace-api",
+          "Port": 8080
+        }
+      ]
+    },
+    {
       "Key": "internal-channel-member",
       "UpstreamPathTemplate": "/internal/channels/{channelId}/members/{userId}",
       "UpstreamHttpMethod": ["GET"],
