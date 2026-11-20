@@ -1,12 +1,12 @@
-using Bizcord.MessageClient.Clients;
 using Bizcord.Contracts.Events;
 using Bizcord.WorkspaceApi.Data;
 using Bizcord.WorkspaceApi.Models;
+using Bizcord.WorkspaceApi.Outbox;
 using Bizcord.Contracts.Workspaces;
 
 namespace Bizcord.WorkspaceApi.Services;
 
-public class WorkspaceService(IWorkspaceRepository workspaceRepository, IMessageClient messageClient)
+public class WorkspaceService(IWorkspaceRepository workspaceRepository)
     : IWorkspaceService
 {
     public async Task<Workspace> CreateAsync(Guid ownerId, string name, CancellationToken ct,
@@ -124,16 +124,15 @@ public class WorkspaceService(IWorkspaceRepository workspaceRepository, IMessage
         return Result<Channel>.Success(workspace.Channels.Single(c => c.Id == channelId));
     }
 
+    // The event goes to the outbox in the same transaction as the update, and OutboxPublisher sends it (#66).
+    // Publishing it here could lose it if RabbitMQ is down right after the update, and a retry wouldn't help,
+    // because the update guard then sees the activity as already recorded.
     public async Task RecordChannelActivityAsync(MessagePostedEvent message, CancellationToken ct)
     {
-        var updated = await workspaceRepository.UpdateChannelLastActivityAsync(message.ChannelId, message.PostedAt, ct);
-        if (!updated)
-        {
-            return;
-        }
-
-        await messageClient.PublishAsync(
-            new ChannelActivityUpdatedEvent(message.MessageId, message.ChannelId, message.PostedAt), ct);
+        var activityUpdated = new ChannelActivityUpdatedEvent(message.MessageId, message.ChannelId, message.PostedAt,
+            EventId: Guid.NewGuid());
+        await workspaceRepository.UpdateChannelLastActivityAsync(message.ChannelId, message.PostedAt,
+            OutboxMessage.For(activityUpdated.EventId, activityUpdated), ct);
     }
 
     public async Task<Result> IsChannelMemberAsync(Guid userId, Guid channelId, CancellationToken ct)

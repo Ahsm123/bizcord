@@ -1,4 +1,5 @@
 using Bizcord.WorkspaceApi.Models;
+using Bizcord.WorkspaceApi.Outbox;
 using Bizcord.Contracts.Workspaces;
 using Dapper;
 using Npgsql;
@@ -168,7 +169,7 @@ internal sealed class WorkspaceRepository(NpgsqlDataSource dataSource) : IWorksp
     }
 
     public async Task<bool> UpdateChannelLastActivityAsync(Guid channelId, DateTime postedAt,
-        CancellationToken ct)
+        OutboxMessage activityUpdated, CancellationToken ct)
     {
         const string sql = """
                            update channel_activity
@@ -177,9 +178,19 @@ internal sealed class WorkspaceRepository(NpgsqlDataSource dataSource) : IWorksp
                            """;
 
         await using var connection = await dataSource.OpenConnectionAsync(ct);
+        await using var tx = await connection.BeginTransactionAsync(ct);
+
         var rows = await connection.ExecuteAsync(new CommandDefinition(sql, new { channelId, postedAt },
-            cancellationToken: ct));
-        return rows > 0;
+            transaction: tx, cancellationToken: ct));
+        if (rows == 0)
+        {
+            await tx.RollbackAsync(ct);
+            return false;
+        }
+
+        await OutboxRepository.AddAsync(connection, tx, activityUpdated, ct);
+        await tx.CommitAsync(ct);
+        return true;
     }
 
     public async Task<bool> DeleteAsync(Guid id, CancellationToken ct)

@@ -6,9 +6,21 @@ public class FakeMessageClient() : IMessageClient
 {
     public readonly List<object> publishedMessages = new();
 
+    // The T each message was published as. RabbitMQ routes on it, so it must be the event's own type.
+    public readonly List<Type> publishedTypes = new();
+
+    // Set to make every publish throw, like RabbitMQ being down
+    public bool brokerDown;
+
     public Task PublishAsync<T>(T message, CancellationToken ct = default)
     {
-        publishedMessages.Add(message);
+        if (brokerDown)
+        {
+            throw new InvalidOperationException("RabbitMQ is down");
+        }
+
+        publishedTypes.Add(typeof(T));
+        publishedMessages.Add(message!);
         return Task.CompletedTask;
     }
 

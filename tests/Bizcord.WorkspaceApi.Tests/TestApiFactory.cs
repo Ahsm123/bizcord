@@ -28,6 +28,8 @@ public class TestApiFactory : WebApplicationFactory<Program>
         builder.UseSetting("Jwt:IssuerSigningKey", SigningKey);
         builder.UseSetting("Jwt:ValidIssuer", Issuer);
         builder.UseSetting("Jwt:ValidAudience", Audience);
+        // The outbox publisher would mark rows in the real database as sent with the fake client (#66)
+        builder.UseSetting("Outbox:PollInterval", "01:00:00");
 
         builder.ConfigureTestServices(services =>
         {

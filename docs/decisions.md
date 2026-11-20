@@ -55,6 +55,19 @@ Nøglen gælder pr. bruger, så to brugere ikke kan ramme hinandens nøgler. Hea
 klienter, Postman-testene og GraphQL virker som før. En retry med samme nøgle men et andet navn får også det første
 workspace. Vi tjekker ikke, om indholdet er det samme.
 
+## Outbox til ChannelActivityUpdatedEvent (#66)
+
+Før blev `last_activity_at` gemt og eventet publiceret bagefter. Var RabbitMQ nede lige der, forsvandt eventet, og et
+retry hjalp ikke, fordi opdateringen så allerede var sket, og vagten (`last_activity_at < @postedAt`) sprang den over.
+
+Nu bliver eventet gemt i tabellen `outbox` i samme transaktion som opdateringen. Enten sker begge dele, eller ingen af
+dem. En baggrundsjob (`OutboxPublisher`) kigger hvert sekund efter usendte events, publicerer dem og markerer dem som
+sendt, først når RabbitMQ har bekræftet dem (publisher confirms). Sendte events bliver slettet efter en time.
+
+Ulempen er, at et event kan blive sendt mere end én gang, fx hvis WorkspaceApi stopper efter RabbitMQ har bekræftet,
+men før rækken er markeret som sendt. Derfor har eventet et `EventId`, som modtagerne kan bruge til at frasortere
+dubletter. Rækkerne bliver låst med `for update skip locked`, så to instanser af WorkspaceApi ikke sender de samme.
+
 ## Saga: upload af en fil, der er for stor til kvoten
 
 En saga er en proces, der går på tværs af flere services, hvor hver service laver sin egen del i sin egen database.

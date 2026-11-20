@@ -6,6 +6,7 @@ using Bizcord.WorkspaceApi.Authorization;
 using Bizcord.WorkspaceApi.Data;
 using Bizcord.WorkspaceApi.Extensions;
 using Bizcord.WorkspaceApi.GraphQL;
+using Bizcord.WorkspaceApi.Outbox;
 using Bizcord.WorkspaceApi.Services;
 using DbUp;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -49,6 +50,13 @@ builder.Services.AddScoped<IQuotaRepository, QuotaRepository>();
 // Services
 builder.Services.AddScoped<IWorkspaceService, WorkspaceService>();
 builder.Services.AddScoped<IQuotaService, QuotaService>();
+
+// Outbox (#66): events are saved with the change they describe and published from here
+builder.Services.AddSingleton(TimeProvider.System);
+builder.Services.Configure<OutboxOptions>(builder.Configuration.GetSection("Outbox"));
+builder.Services.AddScoped<IOutboxRepository, OutboxRepository>();
+builder.Services.AddScoped<OutboxDispatcher>();
+builder.Services.AddHostedService<OutboxPublisher>();
 
 // Messaging: registers every IMessageHandler<T> in this assembly and subscribes a worker for each message type
 builder.Services.AddMessaging(builder.Configuration, Assembly.GetExecutingAssembly());

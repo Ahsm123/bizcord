@@ -1,5 +1,6 @@
 using Bizcord.WorkspaceApi.Data;
 using Bizcord.WorkspaceApi.Models;
+using Bizcord.WorkspaceApi.Outbox;
 using Bizcord.Contracts.Workspaces;
 
 namespace Bizcord.WorkspaceApi.Tests;
@@ -11,9 +12,18 @@ public class FakeWorkspaceRepository : IWorkspaceRepository
     public bool updateResult = true;
     public bool hang;
 
-    public Task<bool> UpdateChannelLastActivityAsync(Guid channelId, DateTime postedAt, CancellationToken ct)
+    // The events the repository would have written to the outbox in the same transaction as the update
+    public readonly List<OutboxMessage> outbox = new();
+
+    public Task<bool> UpdateChannelLastActivityAsync(Guid channelId, DateTime postedAt, OutboxMessage activityUpdated,
+        CancellationToken ct)
     {
         activityUpdates.Add((channelId, postedAt));
+        if (updateResult)
+        {
+            outbox.Add(activityUpdated);
+        }
+
         return Task.FromResult(updateResult);
     }
 

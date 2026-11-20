@@ -12,7 +12,7 @@ The records are in [Bizcord.Contracts/Events](../src/Bizcord.Contracts/Events) a
 | Event                       | Publisher    | Consumers                                                               | Payload                                                 |
 |-----------------------------|--------------|-------------------------------------------------------------------------|---------------------------------------------------------|
 | MessagePostedEvent          | Message      | `WorkspaceApi`, `Realtime Gateway (planned)`, `Notifications (planned)` | `MessageId` `ChannelId` `AuthorId` `Content` `PostedAt` |
-| ChannelActivityUpdatedEvent | WorkspaceApi | `Realtime Gateway (planned)`                                            | `MessageId` `ChannelId` `LastActivityAt`                |
+| ChannelActivityUpdatedEvent | WorkspaceApi | `Realtime Gateway (planned)`                                            | `MessageId` `ChannelId` `LastActivityAt` `EventId`      |
 | QuotaReservedEvent          | WorkspaceApi | `FileApi`                                                               | `SagaId` `WorkspaceId` `SizeBytes`                      |
 | QuotaExceededEvent          | WorkspaceApi | `FileApi`                                                               | `SagaId` `WorkspaceId` `Reason`                         |
 | PostMessageSucceededEvent   | Message      | `FileApi`                                                               | `SagaId` `MessageId`                                    |
@@ -20,6 +20,11 @@ The records are in [Bizcord.Contracts/Events](../src/Bizcord.Contracts/Events) a
 
 `WorkspaceApi` only publishes `ChannelActivityUpdatedEvent` when the channel exists and `PostedAt` is newer than the
 channel's stored last activity, so unknown channels and late or duplicate messages publish nothing.
+
+`ChannelActivityUpdatedEvent` goes through an outbox (#66). The new last activity and the event are saved in one
+transaction, and a background worker publishes the event afterwards and marks it as sent once RabbitMQ has confirmed
+it. So an event isn't lost when RabbitMQ is down; it goes out when RabbitMQ is back. The price is at-least-once
+delivery: a consumer can get the same event twice and should skip one it has seen by its `EventId`.
 
 ## Commands
 

@@ -6,12 +6,11 @@ namespace Bizcord.WorkspaceApi.Tests;
 public class WorkspaceServiceTests
 {
     [Fact]
-    public async Task RecordChannelActivity_RepositoryReportsNoUpdate_PublishesNothing()
+    public async Task RecordChannelActivity_RepositoryReportsNoUpdate_PutsNothingInTheOutbox()
     {
         // Arrange
         var repository = new FakeWorkspaceRepository { updateResult = false };
-        var client = new FakeMessageClient();
-        var service = new WorkspaceService(repository, client);
+        var service = new WorkspaceService(repository);
         var message = new MessagePostedEvent(
             MessageId: Guid.NewGuid(),
             ChannelId: Guid.NewGuid(),
@@ -24,6 +23,6 @@ public class WorkspaceServiceTests
         await service.RecordChannelActivityAsync(message, CancellationToken.None);
 
         // Assert
-        Assert.Empty(client.publishedMessages);
+        Assert.Empty(repository.outbox);
     }
 }
