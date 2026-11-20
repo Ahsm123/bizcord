@@ -60,21 +60,44 @@ internal sealed class QuotaRepository(NpgsqlDataSource dataSource) : IQuotaRepos
     {
         // One statement, so the reservation and the used space change together. Only a 'reserved' row matches,
         // so a second release, or a release for a rejected reservation, changes nothing.
-        const string sql = """
-                           with released as (
-                               update quota_reservations set status = 'released'
-                               where saga_id = @sagaId and status = 'reserved'
-                               returning workspace_id, size_bytes
-                           )
-                           update workspaces w
-                           set storage_used_bytes = w.storage_used_bytes - r.size_bytes
-                           from released r
-                           where w.id = r.workspace_id
-                           """;
+        const string release = """
+                               with released as (
+                                   update quota_reservations set status = 'released'
+                                   where saga_id = @sagaId and status = 'reserved'
+                                   returning workspace_id, size_bytes
+                               )
+                               update workspaces w
+                               set storage_used_bytes = w.storage_used_bytes - r.size_bytes
+                               from released r
+                               where w.id = r.workspace_id
+                               """;
+
+        // ReserveQuota and ReleaseQuota arrive on different queues, so a release can come before its reserve,
+        // e.g. when FileApi timed out the saga while Workspace was down. The 'released' row makes that late
+        // ReserveQuota a no-op instead of reserving space nobody will ever release.
+        const string tombstone = """
+                                 insert into quota_reservations (saga_id, workspace_id, size_bytes, status)
+                                 values (@sagaId, @noWorkspace, 0, 'released')
+                                 on conflict (saga_id) do nothing
+                                 """;
 
         await using var connection = await dataSource.OpenConnectionAsync(ct);
-        var rows = await connection.ExecuteAsync(new CommandDefinition(sql, new { sagaId }, cancellationToken: ct));
-        return rows > 0;
+        if (await ExecuteAsync(release) > 0)
+        {
+            return true;
+        }
+
+        if (await ExecuteAsync(tombstone) > 0)
+        {
+            return false;
+        }
+
+        // A reservation for the saga exists after all. It may have been committed between the two statements,
+        // so try the release once more against what is there now.
+        return await ExecuteAsync(release) > 0;
+
+        Task<int> ExecuteAsync(string sql) => connection.ExecuteAsync(new CommandDefinition(sql,
+            new { sagaId, noWorkspace = Guid.Empty }, cancellationToken: ct));
     }
 
     private static ReservationOutcome ToOutcome(string status) => status switch

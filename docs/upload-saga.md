@@ -78,7 +78,8 @@ sequenceDiagram
 
 ## Failure: a service never answers
 
-A background job in FileApi looks for `Pending` uploads that have not moved for too long.
+A background job in FileApi ([StalledUploads](../src/Bizcord.FileApi/Services/StalledUploads.cs)) checks every 10 seconds
+for `Pending` uploads that have not moved for 30 seconds (`UploadSaga:CheckInterval` and `UploadSaga:StalledAfter`).
 
 ```mermaid
 flowchart LR
@@ -87,8 +88,14 @@ flowchart LR
     Q -- yes, after the pivot --> P[Send PostMessage again]
 ```
 
-After the pivot the job sends `PostMessage` again instead of rolling back. Message is idempotent on `SagaId`, so the
-message is only posted once.
+- **Before the pivot** the job rejects the upload and then sends `ReleaseQuota`. The reject only succeeds while
+  `PostMessage` still hasn't been sent, so a `QuotaReservedEvent` that arrives at the same moment can't end with a
+  posted message for a rejected upload.
+- **After the pivot** the job sends `PostMessage` again instead of rolling back. Message is idempotent on `SagaId`, so
+  the message is only posted once. The job tries again every 30 seconds until Message answers.
+
+`ReserveQuota` and `ReleaseQuota` go to different queues, so Workspace can get the release first, e.g. when it was down
+while the saga timed out. Workspace then stores the release, and the late `ReserveQuota` reserves nothing.
 
 ## Duplicates and late replies
 
@@ -109,7 +116,8 @@ with `GET api/v1/uploads/{id}`:
 | Happy path               | An upload that fits the quota (100 MB by default)                                         | `Confirmed`                                        |
 | Quota exceeded           | `sizeBytes` bigger than the quota                                                        | `Rejected`, nothing reserved                       |
 | Message can't post       | `MESSAGE_STUB_BEHAVIOR=Fail docker compose up -d message-stub`                           | `Rejected`, the quota is released again           |
-| Message never answers    | `MESSAGE_STUB_BEHAVIOR=NoReply docker compose up -d message-stub`                        | Stays `Pending` until the timeout job handles it   |
+| Message never answers    | `MESSAGE_STUB_BEHAVIOR=NoReply docker compose up -d message-stub`                        | Stays `Pending`, the job sends `PostMessage` again every 30 s. `Confirmed` once the stub answers again |
+| Workspace is down        | `docker compose stop workspace-api` before the upload, start it after a minute         | `Rejected` after 30 s, and nothing is reserved when Workspace comes back |
 
 `docker compose up -d message-stub` without the variable sets it back to `Succeed`.
 
@@ -119,3 +127,6 @@ with `GET api/v1/uploads/{id}`:
   channel, or that the channel belongs to the workspace. A real File service would ask Workspace first, through the
   internal members endpoint from #72.
 - The client sends the file size, and only the metadata is stored (see [decisions.md](decisions.md)).
+- FileApi stores the upload and then publishes `ReserveQuota` in two steps. If RabbitMQ is down in between, the upload
+  waits for the timeout job. The same goes for the `ReleaseQuota` after a timeout: if that publish is lost, the space
+  stays reserved. An outbox would fix both, like #66 describes for WorkspaceApi.

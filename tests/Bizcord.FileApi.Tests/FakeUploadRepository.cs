@@ -26,11 +26,22 @@ public class FakeUploadRepository : IUploadRepository
         Task.FromResult(TryUpdatePending(id,
             u => u with { Status = status, RejectionReason = rejectionReason, UpdatedAt = now }));
 
-    private bool TryUpdatePending(Guid id, Func<Upload, Upload> change)
+    public Task<IReadOnlyList<Upload>> FindStalledAsync(DateTime updatedBefore, int limit, CancellationToken ct) =>
+        Task.FromResult<IReadOnlyList<Upload>>(uploads.Values
+            .Where(u => u.Status == UploadStatus.Pending && u.UpdatedAt < updatedBefore)
+            .OrderBy(u => u.UpdatedAt).Take(limit).ToList());
+
+    public Task<bool> RejectBeforePivotAsync(Guid id, string reason, DateTime now, CancellationToken ct) =>
+        Task.FromResult(TryUpdatePending(id,
+            u => u with { Status = UploadStatus.Rejected, RejectionReason = reason, UpdatedAt = now },
+            onlyBeforePivot: true));
+
+    private bool TryUpdatePending(Guid id, Func<Upload, Upload> change, bool onlyBeforePivot = false)
     {
         lock (uploads)
         {
-            if (!uploads.TryGetValue(id, out var upload) || upload.Status != UploadStatus.Pending)
+            if (!uploads.TryGetValue(id, out var upload) || upload.Status != UploadStatus.Pending
+                || (onlyBeforePivot && upload.MessageRequested))
             {
                 return false;
             }
