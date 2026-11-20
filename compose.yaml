@@ -1,3 +1,10 @@
+# Every Bizcord service logs to stdout with the json-file driver. The tag puts the container name in each log line,
+# so the Fluentd sidecar can tell the services apart (docs/logging.md).
+x-service-logging: &service-logging
+  driver: json-file
+  options:
+    tag: "{{.Name}}"
+
 services:
   workspace-db:
     image: postgres:17
@@ -16,6 +23,7 @@ services:
 
   workspace-migrator:
     image: bizcord-workspace-api
+    logging: *service-logging
     build:
       context: .
       dockerfile: src/Bizcord.WorkspaceApi/Dockerfile
@@ -31,6 +39,7 @@ services:
 
   workspace-api:
     image: bizcord-workspace-api
+    logging: *service-logging
     build:
       context: .
       dockerfile: src/Bizcord.WorkspaceApi/Dockerfile
@@ -64,6 +73,7 @@ services:
 
   file-migrator:
     image: bizcord-file-api
+    logging: *service-logging
     build:
       context: .
       dockerfile: src/Bizcord.FileApi/Dockerfile
@@ -79,6 +89,7 @@ services:
 
   file-api:
     image: bizcord-file-api
+    logging: *service-logging
     build:
       context: .
       dockerfile: src/Bizcord.FileApi/Dockerfile
@@ -97,6 +108,7 @@ services:
 
   gateway:
     image: bizcord-gateway
+    logging: *service-logging
     build:
       context: .
       dockerfile: src/Bizcord.Gateway/Dockerfile
@@ -116,6 +128,7 @@ services:
   # MessageStub__Behavior can be Succeed, Fail or NoReply to try each path.
   message-stub:
     image: bizcord-message-stub
+    logging: *service-logging
     build:
       context: .
       dockerfile: src/Bizcord.MessageStub/Dockerfile
@@ -129,6 +142,16 @@ services:
         condition: service_healthy
       vault:
         condition: service_healthy
+
+  # Logging sidecar (#83). Runs as root, because Docker's log files are only readable by root.
+  fluentd:
+    image: fluent/fluentd:v1.18-1
+    user: root
+    volumes:
+      - ./fluentd/fluent.conf:/fluentd/etc/fluent.conf:ro
+      - /var/lib/docker/containers:/fluentd/log/containers:ro
+    environment:
+      FLUENTD_CONF: fluent.conf
 
   rabbitmq:
     image: rabbitmq:4-management

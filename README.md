@@ -28,6 +28,7 @@ bizcord/
 │   └── Bizcord.MessageClient.Tests/
 ├── docs/                         # diagrams, bounded contexts, events, REST API, the upload saga and Vault
 ├── vault/                        # Vault config and the development setup script
+├── fluentd/                      # Config for the logging sidecar
 ├── compose.yaml
 └── Bizcord.slnx
 ```
@@ -57,6 +58,11 @@ How the services talk to each other:
 
 The services read their connection strings and the JWT signing key from Vault. The first time on a new machine,
 follow [docs/vault.md](docs/vault.md) to set up Vault and `.env`, then run `docker compose up -d`.
+
+## Logs
+
+A Fluentd sidecar collects the stdout of every service: `docker compose logs -f fluentd`.
+See [docs/logging.md](docs/logging.md).
 
 ## Ports
 
