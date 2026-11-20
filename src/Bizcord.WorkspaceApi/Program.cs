@@ -43,9 +43,11 @@ if (args.Contains("migrate"))
 var csb = new NpgsqlConnectionStringBuilder(connectionString) { CancellationTimeout = -1 };
 builder.Services.AddSingleton(_ => NpgsqlDataSource.Create(csb.ConnectionString));
 builder.Services.AddScoped<IWorkspaceRepository, WorkspaceRepository>();
+builder.Services.AddScoped<IQuotaRepository, QuotaRepository>();
 
 // Services
 builder.Services.AddScoped<IWorkspaceService, WorkspaceService>();
+builder.Services.AddScoped<IQuotaService, QuotaService>();
 
 // Messaging: registers every IMessageHandler<T> in this assembly and subscribes a worker for each message type
 builder.Services.AddMessaging(builder.Configuration, Assembly.GetExecutingAssembly());
