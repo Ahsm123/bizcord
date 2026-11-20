@@ -21,6 +21,15 @@ Workspaces, channels, members, roles, permissions, and each workspace's storage 
 
 **Not:** messages, profile data, authn.
 
+## Files
+
+File Service:
+    Owns uploads: the file name, size and the message that goes with it, and the status of the upload
+    (Pending, Confirmed or Rejected). Only the metadata is stored, not the file itself.
+    Orchestrates the upload saga (see [upload-saga.md](upload-saga.md)), so it also owns the saga state.
+
+**Not:** the storage quota (Workspace), the messages in a channel (Message).
+
 ## Notifications
 
 Notification Service:
@@ -42,8 +51,8 @@ Message Service:
 ## API Gateway
 
 The single entry point for clients. Routes each request to the right service and validates the access token.
-After validating the token, the gateway passes the user ID to the services in a X-User-Id header, taken from the token's `sub` claim.
-The services trust that header and don't validate the token again, which is only safe when services are only reachable through the gateway.
+The services validate the token again and read the user from its `sub` claim, so a call inside the compose network
+can't skip the check (#72). The gateway removes any `X-User-Id` header a client sends.
 In development the gateway also has a faucet that issues tokens, as a stand-in for the idp.
 
 **Not:** owns no data and no business logic, and doesn't decide what a user may do in a workspace (Workspace does).
@@ -68,6 +77,9 @@ Ex: MessageSent, ReactionAdded.
 Each service has its own database. No tables are shared and no service reads another service's database.
 Other services only reference Workspace data by the ID, and Workspace does the same with users:
 - members.user_id is just an ID and not a foreign key, since users belong to Profile.
+
+File has one table, `uploads`. It stores the workspace and channel ids, but no foreign keys, since they belong to
+Workspace.
 
 Workspace has these tables:
 - `workspaces` (including the storage limit and used space), `members`, `channels`, `channel_activity`,

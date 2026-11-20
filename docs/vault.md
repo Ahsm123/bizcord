@@ -11,8 +11,9 @@ KV v2 engine mounted at `secret/`. The keys are configuration keys, so they land
 | Path                   | Keys                                                       | Read by                           |
 |------------------------|------------------------------------------------------------|-----------------------------------|
 | `secret/workspace-api` | `ConnectionStrings:Database`, `ConnectionStrings:Messaging` | workspace-api, workspace-migrator |
+| `secret/file-api`      | `ConnectionStrings:Database`, `ConnectionStrings:Messaging` | file-api, file-migrator           |
 | `secret/message-stub`  | `ConnectionStrings:Messaging`                              | message-stub                      |
-| `secret/shared/jwt`    | `Jwt:IssuerSigningKey`                                     | workspace-api, gateway            |
+| `secret/shared/jwt`    | `Jwt:IssuerSigningKey`                                     | workspace-api, file-api, gateway  |
 
 Every service has its own policy that only allows `read` on its paths, and its own token in `.env`.
 

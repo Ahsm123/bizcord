@@ -20,6 +20,9 @@
     },
     {
       "Key": "workspaces-write",
+      "DownstreamHeaderTransform": {
+        "Location": "http://workspace-api:8080, {BaseUrl}"
+      },
       "UpstreamPathTemplate": "/api/v1/workspaces",
       "UpstreamHttpMethod": ["POST"],
       "DownstreamPathTemplate": "/api/v1/workspaces",
@@ -90,6 +93,9 @@
     },
     {
       "Key": "workspace-channels-write",
+      "DownstreamHeaderTransform": {
+        "Location": "http://workspace-api:8080, {BaseUrl}"
+      },
       "UpstreamPathTemplate": "/api/v1/workspaces/{workspaceId}/channels",
       "UpstreamHttpMethod": ["POST"],
       "AuthenticationOptions": {

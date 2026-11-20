@@ -2,7 +2,8 @@
 
 ## Context
 
-This repository contains the **Workspace** service, which also covers **Channels**.
+This repository contains the **Workspace** service, which also covers **Channels**, and the **File** service for
+uploads. A small stub stands in for the **Message** service, so the [upload saga](docs/upload-saga.md) can run end to end.
 
 - Workspace is upstream of the other services. Messages and reactions need a workspace and a channel to exist in.
 - Channels exist only inside a workspace, so they belong to the same context.
@@ -15,12 +16,14 @@ bizcord/
 ├── src/
 │   ├── Bizcord.Gateway/          # Ocelot API gateway, the single entry point for clients
 │   ├── Bizcord.WorkspaceApi/     # Workspace service
+│   ├── Bizcord.FileApi/          # File service, orchestrates the upload saga
 │   ├── Bizcord.MessageStub/      # Stand-in for the Message service in the upload saga
 │   ├── Bizcord.Contracts/        # DTOs and events shared with other services
 │   └── Bizcord.MessageClient/    # RabbitMQ client wrapper
 ├── tests/
 │   ├── Bizcord.Gateway.Postman/  # Postman collection that tests the gateway against the running stack
 │   ├── Bizcord.WorkspaceApi.Tests/
+│   ├── Bizcord.FileApi.Tests/
 │   ├── Bizcord.MessageStub.Tests/
 │   └── Bizcord.MessageClient.Tests/
 ├── docs/                         # diagrams, bounded contexts, events, REST API, the upload saga and Vault
@@ -63,6 +66,7 @@ Only the gateway is reachable for clients. The services themselves have no host 
 |--------------|--------------------------|
 | gateway      | 8080                     |
 | workspace-db | 5433                     |
+| file-db      | 5434                     |
 | rabbitmq     | 5672, 15672 (management) |
 | vault        | 8200 (localhost only)    |
 

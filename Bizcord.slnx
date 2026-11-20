@@ -1,5 +1,6 @@
 <Solution>
   <Folder Name="/src/">
+    <Project Path="src/Bizcord.FileApi/Bizcord.FileApi.csproj" />
     <Project Path="src/Bizcord.Gateway/Bizcord.Gateway.csproj" />
     <Project Path="src/Bizcord.MessageClient/Bizcord.MessageClient.csproj" />
     <Project Path="src/Bizcord.MessageStub/Bizcord.MessageStub.csproj" />
@@ -12,6 +13,7 @@
   </Folder>
   <Folder Name="/tests/">
     <File Path="tests/Bizcord.Gateway.Postman/Bizcord.Gateway.postman_collection.json" />
+    <Project Path="tests/Bizcord.FileApi.Tests/Bizcord.FileApi.Tests.csproj" />
     <Project Path="tests/Bizcord.MessageClient.Tests/Bizcord.MessageClient.Tests.csproj" />
     <Project Path="tests/Bizcord.MessageStub.Tests/Bizcord.MessageStub.Tests.csproj" />
     <Project Path="tests/Bizcord.Vault.Tests/Bizcord.Vault.Tests.csproj" />

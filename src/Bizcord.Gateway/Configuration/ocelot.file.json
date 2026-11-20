@@ -1,0 +1,41 @@
+{
+  "Routes": [
+    {
+      "Key": "uploads-write",
+      "DownstreamHeaderTransform": {
+        "Location": "http://file-api:8080, {BaseUrl}"
+      },
+      "UpstreamPathTemplate": "/api/v1/uploads",
+      "UpstreamHttpMethod": ["POST"],
+      "DownstreamPathTemplate": "/api/v1/uploads",
+      "DownstreamScheme": "http",
+      "AuthenticationOptions": {
+        "AuthenticationProviderKeys": ["Bearer"],
+        "AllowedScopes": ["file.write"]
+      },
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "file-api",
+          "Port": 8080
+        }
+      ]
+    },
+    {
+      "Key": "uploads-read",
+      "UpstreamPathTemplate": "/api/v1/uploads/{id}",
+      "UpstreamHttpMethod": ["GET"],
+      "AuthenticationOptions": {
+        "AuthenticationProviderKeys": ["Bearer"],
+        "AllowedScopes": ["file.read"]
+      },
+      "DownstreamPathTemplate": "/api/v1/uploads/{id}",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "file-api",
+          "Port": 8080
+        }
+      ]
+    }
+  ]
+}

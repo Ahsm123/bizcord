@@ -14,6 +14,8 @@ vault kv put secret/workspace-api \
   'ConnectionStrings:Database=Host=workspace-db;Port=5432;Database=workspace;Username=postgres;Password=postgres' \
   'ConnectionStrings:Messaging=host=rabbitmq;username=kalo;password=kalo' >/dev/null
 
+vault kv put secret/file-api   'ConnectionStrings:Database=Host=file-db;Port=5432;Database=file;Username=postgres;Password=postgres'   'ConnectionStrings:Messaging=host=rabbitmq;username=kalo;password=kalo' >/dev/null
+
 vault kv put secret/message-stub   'ConnectionStrings:Messaging=host=rabbitmq;username=kalo;password=kalo' >/dev/null
 
 # Shared by every service that issues or checks tokens
@@ -23,6 +25,11 @@ fi
 
 vault policy write workspace-api - >/dev/null <<'EOF'
 path "secret/data/workspace-api" { capabilities = ["read"] }
+path "secret/data/shared/jwt" { capabilities = ["read"] }
+EOF
+
+vault policy write file-api - >/dev/null <<'EOF'
+path "secret/data/file-api" { capabilities = ["read"] }
 path "secret/data/shared/jwt" { capabilities = ["read"] }
 EOF
 
@@ -40,4 +47,5 @@ token() { vault token create -policy="$1" -no-default-policy -ttl=768h -field=to
 echo "# Paste into .env (git ignores it)"
 echo "WORKSPACE_API_VAULT_TOKEN=$(token workspace-api)"
 echo "GATEWAY_VAULT_TOKEN=$(token gateway)"
+echo "FILE_API_VAULT_TOKEN=$(token file-api)"
 echo "MESSAGE_STUB_VAULT_TOKEN=$(token message-stub)"

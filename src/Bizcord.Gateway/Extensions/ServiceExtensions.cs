@@ -11,7 +11,7 @@ public static class ServiceExtensions
     public static IServiceCollection AddJwtTokenService(this IServiceCollection services, IConfiguration configuration)
     {
         services.AddSingleton(new JwtTokenService(GetSigningKey(configuration),
-            GetRequired(configuration, "Jwt:Issuer"), GetRequired(configuration, "Jwt:Audience")));
+            GetRequired(configuration, "Jwt:Issuer"), GetAudiences(configuration)));
         return services;
     }
 
@@ -19,7 +19,7 @@ public static class ServiceExtensions
     {
         var signingKey = GetSigningKey(configuration);
         var issuer = GetRequired(configuration, "Jwt:Issuer");
-        var audience = GetRequired(configuration, "Jwt:Audience");
+        var audiences = GetAudiences(configuration);
         services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             .AddJwtBearer(JwtBearerDefaults.AuthenticationScheme, options =>
             {
@@ -30,7 +30,7 @@ public static class ServiceExtensions
                     ValidateIssuer = true,
                     ValidIssuer = issuer,
                     ValidateAudience = true,
-                    ValidAudience = audience,
+                    ValidAudiences = audiences,
                     ValidateLifetime = true,
                     ValidateIssuerSigningKey = true,
                     IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(signingKey)),
@@ -42,6 +42,13 @@ public static class ServiceExtensions
         services.AddAuthorization();
         services.AddOcelot(configuration);
         return services;
+    }
+
+    // Every service behind the gateway checks that the token is meant for it, so a faucet token names all of them
+    private static string[] GetAudiences(IConfiguration configuration)
+    {
+        var audiences = configuration.GetSection("Jwt:Audiences").Get<string[]>();
+        return audiences is { Length: > 0 } ? audiences : throw new InvalidOperationException("Jwt:Audiences is required.");
     }
 
     private static string GetSigningKey(IConfiguration configuration) =>
