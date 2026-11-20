@@ -47,6 +47,54 @@ services:
       vault:
         condition: service_healthy
 
+  file-db:
+    image: postgres:17
+    ports:
+      - "5434:5432"
+    environment:
+      POSTGRES_DB: file
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    volumes:
+      - file-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U postgres -d file" ]
+      interval: 5s
+      retries: 10
+
+  file-migrator:
+    image: bizcord-file-api
+    build:
+      context: .
+      dockerfile: src/Bizcord.FileApi/Dockerfile
+    command: [ "migrate" ]
+    environment:
+      VAULT_ADDR: http://vault:8200
+      VAULT_TOKEN: ${FILE_API_VAULT_TOKEN}
+    depends_on:
+      file-db:
+        condition: service_healthy
+      vault:
+        condition: service_healthy
+
+  file-api:
+    image: bizcord-file-api
+    build:
+      context: .
+      dockerfile: src/Bizcord.FileApi/Dockerfile
+    # No port: only the gateway is reachable from outside the compose network (#72)
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      VAULT_ADDR: http://vault:8200
+      VAULT_TOKEN: ${FILE_API_VAULT_TOKEN}
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      file-migrator:
+        condition: service_completed_successfully
+      vault:
+        condition: service_healthy
+
   gateway:
     image: bizcord-gateway
     build:
@@ -61,6 +109,7 @@ services:
       VAULT_TOKEN: ${GATEWAY_VAULT_TOKEN}
     depends_on:
       - workspace-api
+      - file-api
       - vault
 
   # Stand-in for the Message service in the upload saga (docs/upload-saga.md).
@@ -115,6 +164,7 @@ services:
 
 volumes:
   workspace-db-data:
+  file-db-data:
   rabbitmq-lib:
   rabbitmq-log:
   vault-data:

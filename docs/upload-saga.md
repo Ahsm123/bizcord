@@ -97,3 +97,10 @@ message is only posted once.
     reply as the first time.
   - Message posts at most once per `SagaId`.
 - A reply that arrives after the upload is already `Confirmed` or `Rejected` is logged and ignored.
+
+## Limitations
+
+- FileApi trusts the `workspaceId` and `channelId` in the request. It doesn't check that the user is a member of the
+  channel, or that the channel belongs to the workspace. A real File service would ask Workspace first, through the
+  internal members endpoint from #72.
+- The client sends the file size, and only the metadata is stored (see [decisions.md](decisions.md)).
