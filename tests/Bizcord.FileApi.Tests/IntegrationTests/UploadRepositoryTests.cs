@@ -11,8 +11,10 @@ namespace Bizcord.FileApi.Tests.IntegrationTests;
 public class UploadRepositoryTests(WebApplicationFactory<Program> factory)
     : IClassFixture<WebApplicationFactory<Program>>
 {
+    // The timeout job is pushed far out, so it can't change an upload in the middle of a test
     private readonly WebApplicationFactory<Program> _app = factory.WithWebHostBuilder(b => b
-        .UseSetting("Jwt:IssuerSigningKey", "test-signing-key-that-is-at-least-32-bytes-long"));
+        .UseSetting("Jwt:IssuerSigningKey", "test-signing-key-that-is-at-least-32-bytes-long")
+        .UseSetting("UploadSaga:CheckInterval", "01:00:00"));
 
     [Fact]
     public async Task AddThenGet_ReturnsTheSameUpload()
@@ -88,13 +90,63 @@ public class UploadRepositoryTests(WebApplicationFactory<Program> factory)
         Assert.False((await Get(upload.Id))!.MessageRequested);
     }
 
-    private static Upload NewUpload() =>
-        Upload.Start(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), "report.pdf", 100, "Hello",
-            new DateTime(2026, 1, 1, 12, 0, 0, DateTimeKind.Utc));
-
-    private async Task<Upload> AddAsync()
+    // Created now, so no running timeout job sees it as stalled during the test
+    [Fact]
+    public async Task FindStalled_ReturnsOnlyPendingUploadsOlderThanTheCutoff()
     {
-        var upload = NewUpload();
+        // Arrange: far in the future, so no running timeout job touches them before the assert
+        var cutoff = new DateTime(2100, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+        var stalled = await AddAsync(NewUpload(cutoff.AddMinutes(-5)));
+        var recent = await AddAsync(NewUpload(cutoff.AddMinutes(5)));
+        var finished = await AddAsync(NewUpload(cutoff.AddMinutes(-5)));
+        await Complete(finished.Id, UploadStatus.Confirmed);
+
+        // Act
+        var found = await WithRepository(r => r.FindStalledAsync(cutoff, 1000, CancellationToken.None));
+
+        // Assert
+        var ids = found.Select(u => u.Id).ToList();
+        Assert.Contains(stalled.Id, ids);
+        Assert.DoesNotContain(recent.Id, ids);
+        Assert.DoesNotContain(finished.Id, ids);
+    }
+
+    [Fact]
+    public async Task RejectBeforePivot_BeforePostMessage_Rejects()
+    {
+        // Arrange
+        var upload = await AddAsync();
+
+        // Act
+        var rejected = await WithRepository(r => r.RejectBeforePivotAsync(upload.Id, "timeout", DateTime.UtcNow, default));
+
+        // Assert
+        Assert.True(rejected);
+        Assert.Equal(UploadStatus.Rejected, (await Get(upload.Id))!.Status);
+    }
+
+    [Fact]
+    public async Task RejectBeforePivot_AfterPostMessage_LeavesItPending()
+    {
+        // Arrange
+        var upload = await AddAsync();
+        await WithRepository(r => r.MarkMessageRequestedAsync(upload.Id, DateTime.UtcNow, default));
+
+        // Act
+        var rejected = await WithRepository(r => r.RejectBeforePivotAsync(upload.Id, "timeout", DateTime.UtcNow, default));
+
+        // Assert
+        Assert.False(rejected);
+        Assert.Equal(UploadStatus.Pending, (await Get(upload.Id))!.Status);
+    }
+
+    private static Upload NewUpload(DateTime? now = null) =>
+        Upload.Start(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), "report.pdf", 100, "Hello",
+            now ?? DateTime.UtcNow);
+
+    private async Task<Upload> AddAsync(Upload? upload = null)
+    {
+        upload ??= NewUpload();
         await WithRepository(r => r.AddAsync(upload, CancellationToken.None));
         return upload;
     }

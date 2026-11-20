@@ -126,6 +126,23 @@ public class QuotaRepositoryTests(WebApplicationFactory<Program> factory)
     }
 
     [Fact]
+    public async Task Release_BeforeTheReserveArrives_TheLateReserveReservesNothing()
+    {
+        // Arrange
+        var workspaceId = await CreateWorkspaceAsync(limitBytes: 100);
+        var sagaId = Guid.NewGuid();
+
+        // Act
+        var released = await ReleaseAsync(sagaId);
+        var lateReserve = await ReserveAsync(sagaId, workspaceId, 60);
+
+        // Assert
+        Assert.False(released);
+        Assert.Equal(ReservationOutcome.AlreadyReleased, lateReserve);
+        Assert.Equal(0, await UsedBytesAsync(workspaceId));
+    }
+
+    [Fact]
     public async Task Release_RejectedReservation_ChangesNothing()
     {
         // Arrange

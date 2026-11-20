@@ -67,6 +67,28 @@ internal sealed class UploadRepository(NpgsqlDataSource dataSource) : IUploadRep
         return rows > 0;
     }
 
+    public async Task<IReadOnlyList<Upload>> FindStalledAsync(DateTime updatedBefore, int limit,
+        CancellationToken ct)
+    {
+        await using var connection = await dataSource.OpenConnectionAsync(ct);
+        var rows = await connection.QueryAsync<UploadRow>(new CommandDefinition(
+            $"{SelectColumns} where status = 'Pending' and updated_at < @updatedBefore order by updated_at limit @limit",
+            new { updatedBefore, limit }, cancellationToken: ct));
+        return rows.Select(r => r.ToUpload()).ToList();
+    }
+
+    public async Task<bool> RejectBeforePivotAsync(Guid id, string reason, DateTime now, CancellationToken ct)
+    {
+        const string sql = """
+                           update uploads set status = 'Rejected', rejection_reason = @reason, updated_at = @now
+                           where id = @id and status = 'Pending' and not message_requested
+                           """;
+
+        await using var connection = await dataSource.OpenConnectionAsync(ct);
+        return await connection.ExecuteAsync(new CommandDefinition(sql, new { id, reason, now },
+            cancellationToken: ct)) > 0;
+    }
+
     private static UploadRow ToRow(Upload u) => new()
     {
         Id = u.Id, UploaderId = u.UploaderId, WorkspaceId = u.WorkspaceId, ChannelId = u.ChannelId,

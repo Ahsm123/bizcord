@@ -48,6 +48,11 @@ builder.Services.AddScoped<IUploadRepository, UploadRepository>();
 builder.Services.AddSingleton(TimeProvider.System);
 builder.Services.AddScoped<IUploadService, UploadService>();
 
+// The timeout job for sagas where a service never answered
+builder.Services.Configure<UploadSagaOptions>(builder.Configuration.GetSection("UploadSaga"));
+builder.Services.AddScoped<StalledUploads>();
+builder.Services.AddHostedService<StalledUploadsWorker>();
+
 // Messaging: registers every IMessageHandler<T> in this assembly and subscribes a worker for each message type
 builder.Services.AddMessaging(builder.Configuration, Assembly.GetExecutingAssembly());
 
