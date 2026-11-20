@@ -16,6 +16,13 @@ public static class MessagingServiceCollectionExtensions
     {
         var connection = configuration.GetConnectionString("Messaging")
                          ?? throw new InvalidOperationException("Missing ConnectionStrings:Messaging");
+
+        // With publisher confirms, PublishAsync only completes when RabbitMQ has acknowledged the message,
+        // so a caller like WorkspaceApi's outbox knows it was really sent (#66)
+        if (!connection.Contains("publisherConfirms", StringComparison.OrdinalIgnoreCase))
+        {
+            connection += ";publisherConfirms=true";
+        }
         services.AddEasyNetQ(connection);
         services.AddSingleton<IMessageClient, Clients.MessageClient>();
         AddMessageHandlers(services, handlerAssembly);

@@ -1,78 +1,78 @@
+using System.Text.Json;
 using Bizcord.Contracts.Events;
 using Bizcord.WorkspaceApi.Handlers;
 using Bizcord.WorkspaceApi.Services;
-using Xunit.Sdk;
 
 namespace Bizcord.WorkspaceApi.Tests;
 
+// The handler records the activity, and the event goes to the outbox with it (#66). OutboxPublisher sends it later.
 public class MessagePostedHandlerTests
 {
+    private readonly FakeWorkspaceRepository _repository = new();
+
     [Fact]
-    public async Task Handle_PublishedResultEvent_WithCorrectMessageId()
+    public async Task Handle_PutsChannelActivityUpdatedInTheOutbox_WithTheMessageId()
     {
         // Arrange
-        var messageId = Guid.NewGuid();
-        var client = new FakeMessageClient();
-        var handler = new MessagePostedHandler(new WorkspaceService(new FakeWorkspaceRepository(), client));
-        var message = new MessagePostedEvent(
-            MessageId: messageId,
-            ChannelId: Guid.NewGuid(),
-            AuthorId: Guid.NewGuid(),
-            Content: "Test",
-            PostedAt: DateTime.UtcNow
-        );
+        var message = NewMessage(DateTime.UtcNow);
 
         // Act
-        await handler.Handle(message, CancellationToken.None);
+        await Handler().Handle(message, CancellationToken.None);
 
         // Assert
-        var published = client.SinglePublished<ChannelActivityUpdatedEvent>();
-        Assert.NotNull(published);
-        Assert.Equal(messageId, published.MessageId);
+        var updated = SingleOutboxEvent();
+        Assert.Equal(message.MessageId, updated.MessageId);
+        Assert.Equal(message.ChannelId, updated.ChannelId);
     }
 
     [Fact]
-    public async Task Handler_CanConsume_MinimumValidContract()
-    {
-        // Arrange
-        var client = new FakeMessageClient();
-        var handler = new MessagePostedHandler(new WorkspaceService(new FakeWorkspaceRepository(), client));
-        var message = new MessagePostedEvent(
-            MessageId: Guid.NewGuid(),
-            ChannelId: Guid.NewGuid(),
-            AuthorId: Guid.NewGuid(),
-            Content: "Hello world",
-            PostedAt: DateTime.UtcNow
-        );
-
-        // Act
-        var exception = await Record.ExceptionAsync(() => handler.Handle(message, CancellationToken.None));
-
-        // Assert
-        Assert.Null(exception);
-        Assert.Equal(1, client.publishedMessages.Count);
-    }
-
-    [Fact]
-    public async Task Handle_PublishedEvent_HasLastActivityAtFromPostedAt()
+    public async Task Handle_OutboxEvent_HasLastActivityAtFromPostedAt()
     {
         // Arrange
         var postedAt = new DateTime(2026, 1, 1, 12, 0, 0, DateTimeKind.Utc);
-        var client = new FakeMessageClient();
-        var handler = new MessagePostedHandler(new WorkspaceService(new FakeWorkspaceRepository(), client));
-        var message = new MessagePostedEvent(
-            MessageId: Guid.NewGuid(),
-            ChannelId: Guid.NewGuid(),
-            AuthorId: Guid.NewGuid(),
-            Content: "Test",
-            PostedAt: postedAt
-        );
 
         // Act
-        await handler.Handle(message, CancellationToken.None);
+        await Handler().Handle(NewMessage(postedAt), CancellationToken.None);
 
         // Assert
-        var published = client.SinglePublished<ChannelActivityUpdatedEvent>();
-        Assert.Equal(postedAt, published.LastActivityAt);
+        Assert.Equal(postedAt, SingleOutboxEvent().LastActivityAt);
     }
+
+    [Fact]
+    public async Task Handle_OutboxRowId_IsTheEventIdConsumersDedupeOn()
+    {
+        // Act
+        await Handler().Handle(NewMessage(DateTime.UtcNow), CancellationToken.None);
+
+        // Assert
+        var row = Assert.Single(_repository.outbox);
+        Assert.NotEqual(Guid.Empty, row.Id);
+        Assert.Equal(row.Id, SingleOutboxEvent().EventId);
+        Assert.Equal(typeof(ChannelActivityUpdatedEvent).FullName, row.Type);
+    }
+
+    [Fact]
+    public async Task Handle_ActivityNotNewer_PutsNothingInTheOutbox()
+    {
+        // Arrange
+        _repository.updateResult = false;
+
+        // Act
+        await Handler().Handle(NewMessage(DateTime.UtcNow), CancellationToken.None);
+
+        // Assert
+        Assert.Empty(_repository.outbox);
+    }
+
+    private MessagePostedHandler Handler() => new(new WorkspaceService(_repository));
+
+    private ChannelActivityUpdatedEvent SingleOutboxEvent() =>
+        JsonSerializer.Deserialize<ChannelActivityUpdatedEvent>(Assert.Single(_repository.outbox).Payload)!;
+
+    private static MessagePostedEvent NewMessage(DateTime postedAt) => new(
+        MessageId: Guid.NewGuid(),
+        ChannelId: Guid.NewGuid(),
+        AuthorId: Guid.NewGuid(),
+        Content: "Test",
+        PostedAt: postedAt);
 }

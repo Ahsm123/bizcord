@@ -10,12 +10,21 @@ namespace Bizcord.WorkspaceApi.Tests.IntegrationTests;
 
 // Runs the SQL against the real Postgres from compose, since the atomic update is what keeps parallel
 // reservations from overbooking the quota. A fake repository can't show that.
+[Collection(IntegrationCollection.Name)]
 public class QuotaRepositoryTests(WebApplicationFactory<Program> factory)
-    : IClassFixture<WebApplicationFactory<Program>>
+    : IClassFixture<WebApplicationFactory<Program>>, IAsyncLifetime
 {
     private readonly WebApplicationFactory<Program> _app = factory.WithWebHostBuilder(b => b
         .UseSetting("ConnectionStrings:Messaging", "host=localhost;username=kalo;password=kalo")
-        .UseSetting("Jwt:IssuerSigningKey", "test-signing-key-that-is-at-least-32-bytes-long"));
+        .UseSetting("Jwt:IssuerSigningKey", "test-signing-key-that-is-at-least-32-bytes-long")
+        // The outbox publisher would send other tests' outbox rows, so it is pushed far out (#66)
+        .UseSetting("Outbox:PollInterval", "01:00:00"));
+
+    // Stops this test's host, so it doesn't keep consuming RabbitMQ messages meant for the next test
+    public Task InitializeAsync() => Task.CompletedTask;
+
+    public Task DisposeAsync() => _app.DisposeAsync().AsTask();
+
 
     [Fact]
     public async Task Reserve_WithinLimit_IsReservedAndCounted()

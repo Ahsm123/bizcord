@@ -9,12 +9,21 @@ namespace Bizcord.WorkspaceApi.Tests.IntegrationTests;
 
 // #67 against the real Postgres, since only the unique key in the database can stop two requests
 // that arrive at the same time
+[Collection(IntegrationCollection.Name)]
 public class IdempotencyKeyRepositoryTests(WebApplicationFactory<Program> factory)
-    : IClassFixture<WebApplicationFactory<Program>>
+    : IClassFixture<WebApplicationFactory<Program>>, IAsyncLifetime
 {
     private readonly WebApplicationFactory<Program> _app = factory.WithWebHostBuilder(b => b
         .UseSetting("ConnectionStrings:Messaging", "host=localhost;username=kalo;password=kalo")
-        .UseSetting("Jwt:IssuerSigningKey", "test-signing-key-that-is-at-least-32-bytes-long"));
+        .UseSetting("Jwt:IssuerSigningKey", "test-signing-key-that-is-at-least-32-bytes-long")
+        // The outbox publisher would send other tests' outbox rows, so it is pushed far out (#66)
+        .UseSetting("Outbox:PollInterval", "01:00:00"));
+
+    // Stops this test's host, so it doesn't keep consuming RabbitMQ messages meant for the next test
+    public Task InitializeAsync() => Task.CompletedTask;
+
+    public Task DisposeAsync() => _app.DisposeAsync().AsTask();
+
 
     [Fact]
     public async Task SameKeyAgain_ReturnsTheOriginalWorkspace()

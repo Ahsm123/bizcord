@@ -9,13 +9,15 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace Bizcord.WorkspaceApi.Tests.IntegrationTests;
 
+[Collection(IntegrationCollection.Name)]
 public class MessagePostedHandlerTests(WebApplicationFactory<Program> factory)
     : IClassFixture<WebApplicationFactory<Program>>
 {
     [Fact]
     public async Task MessagePostedEvent_IsConsumed_AndResultEventPublished()
     {
-        var app = factory.WithWebHostBuilder(b => b
+        // Disposed at the end, so this host doesn't keep consuming messages meant for the next test
+        await using var app = factory.WithWebHostBuilder(b => b
             .UseSetting("ConnectionStrings:Messaging", "host=localhost;username=kalo;password=kalo")
             .UseSetting("Jwt:IssuerSigningKey", "test-signing-key-that-is-at-least-32-bytes-long"));
         var client = app.Services.GetRequiredService<IMessageClient>();
@@ -32,7 +34,8 @@ public class MessagePostedHandlerTests(WebApplicationFactory<Program> factory)
         }
 
         await using var capture =
-            await MessageCapture<ChannelActivityUpdatedEvent>.StartAsync(app.Services.GetRequiredService<IBus>());
+            await MessageCapture<ChannelActivityUpdatedEvent>.StartAsync(app.Services.GetRequiredService<IBus>(),
+                e => e.MessageId == messageId);
 
         await client.PublishAsync(new MessagePostedEvent(
             MessageId: messageId,

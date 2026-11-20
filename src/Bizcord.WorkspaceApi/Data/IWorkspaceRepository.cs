@@ -1,4 +1,5 @@
 using Bizcord.WorkspaceApi.Models;
+using Bizcord.WorkspaceApi.Outbox;
 using Bizcord.Contracts.Workspaces;
 
 namespace Bizcord.WorkspaceApi.Data;
@@ -14,7 +15,10 @@ public interface IWorkspaceRepository
     // nothing is saved and the id of the workspace the key created the first time is returned instead.
     Task<Guid> CreateAsync(Workspace workspace, Guid userId, string idempotencyKey, CancellationToken ct);
     Task<IReadOnlyList<WorkspaceDto>> ListForUserAsync(Guid userId, CancellationToken ct);
-    Task<bool> UpdateChannelLastActivityAsync(Guid channelId, DateTime postedAt, CancellationToken ct);
+    // Writes the new last activity and, only when it changed, the event to the outbox in one transaction (#66),
+    // so the event can't be lost between the two. Returns false when nothing changed.
+    Task<bool> UpdateChannelLastActivityAsync(Guid channelId, DateTime postedAt, OutboxMessage activityUpdated,
+        CancellationToken ct);
     Task<bool> DeleteAsync(Guid id, CancellationToken ct);
     Task<bool> IsChannelMemberAsync(Guid userId, Guid channelId, CancellationToken ct);
 }

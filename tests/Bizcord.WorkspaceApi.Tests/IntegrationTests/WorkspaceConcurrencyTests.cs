@@ -10,12 +10,21 @@ namespace Bizcord.WorkspaceApi.Tests.IntegrationTests;
 
 // #68: two requests that load the same workspace and both save must not overwrite each other.
 // Runs against the real Postgres, since every load there gives its own copy of the workspace.
+[Collection(IntegrationCollection.Name)]
 public class WorkspaceConcurrencyTests(WebApplicationFactory<Program> factory)
-    : IClassFixture<WebApplicationFactory<Program>>
+    : IClassFixture<WebApplicationFactory<Program>>, IAsyncLifetime
 {
     private readonly WebApplicationFactory<Program> _app = factory.WithWebHostBuilder(b => b
         .UseSetting("ConnectionStrings:Messaging", "host=localhost;username=kalo;password=kalo")
-        .UseSetting("Jwt:IssuerSigningKey", "test-signing-key-that-is-at-least-32-bytes-long"));
+        .UseSetting("Jwt:IssuerSigningKey", "test-signing-key-that-is-at-least-32-bytes-long")
+        // The outbox publisher would send other tests' outbox rows, so it is pushed far out (#66)
+        .UseSetting("Outbox:PollInterval", "01:00:00"));
+
+    // Stops this test's host, so it doesn't keep consuming RabbitMQ messages meant for the next test
+    public Task InitializeAsync() => Task.CompletedTask;
+
+    public Task DisposeAsync() => _app.DisposeAsync().AsTask();
+
 
     private readonly Guid _admin = Guid.NewGuid();
 
