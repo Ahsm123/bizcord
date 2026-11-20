@@ -15,11 +15,13 @@ bizcord/
 ├── src/
 │   ├── Bizcord.Gateway/          # Ocelot API gateway, the single entry point for clients
 │   ├── Bizcord.WorkspaceApi/     # Workspace service
+│   ├── Bizcord.MessageStub/      # Stand-in for the Message service in the upload saga
 │   ├── Bizcord.Contracts/        # DTOs and events shared with other services
 │   └── Bizcord.MessageClient/    # RabbitMQ client wrapper
 ├── tests/
 │   ├── Bizcord.Gateway.Postman/  # Postman collection that tests the gateway against the running stack
 │   ├── Bizcord.WorkspaceApi.Tests/
+│   ├── Bizcord.MessageStub.Tests/
 │   └── Bizcord.MessageClient.Tests/
 ├── docs/                         # diagrams, bounded contexts, events, REST API, the upload saga and Vault
 ├── vault/                        # Vault config and the development setup script
