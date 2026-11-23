@@ -26,7 +26,15 @@ and a Guid `sub`. The token's `aud` lists both `workspace-api` and `file-api`, a
 that names it.
 
 Tests: `newman run tests/Bizcord.Gateway.Postman/Bizcord.Gateway.postman_collection.json` against the
-running compose stack.
+running compose stack (`npx newman run ...` works without installing it). It goes through the gateway and checks:
+
+- tokens: 401 without or with an invalid token, 403 without the right scope or role
+- the internal endpoint: only a token with `role: internal-service` gets through
+- every workspace and channel route
+- uploads and the saga: an upload that fits ends `Confirmed`, one bigger than the quota ends `Rejected`, another user
+  gets 404, and `Location` points at the gateway
+- GraphQL: a query, a mutation, a mutation refused for a read-only token, the `Workspace.NotFound` error, and 403 at
+  the gateway without a GraphQL scope
 
 ## WorkspaceApi
 
