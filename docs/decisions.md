@@ -58,10 +58,10 @@ workspace. Vi tjekker ikke, om indholdet er det samme.
 ## Outbox til ChannelActivityUpdatedEvent (#66)
 
 Før blev `last_activity_at` gemt og eventet publiceret bagefter. Var RabbitMQ nede lige der, forsvandt eventet, og et
-retry hjalp ikke, fordi opdateringen så allerede var sket, og vagten (`last_activity_at < @postedAt`) sprang den over.
+retry hjalp ikke, fordi opdateringen så allerede var sket, og guard clause: (`last_activity_at < @postedAt`) sprang den over.
 
 Nu bliver eventet gemt i tabellen `outbox` i samme transaktion som opdateringen. Enten sker begge dele, eller ingen af
-dem. En baggrundsjob (`OutboxPublisher`) kigger hvert sekund efter usendte events, publicerer dem og markerer dem som
+dem. En baggrundsjob (`OutboxPublisher`) kigger hvert sekund efter nye events, publicerer dem og markerer dem som
 sendt, først når RabbitMQ har bekræftet dem (publisher confirms). Sendte events bliver slettet efter en time.
 
 Ulempen er, at et event kan blive sendt mere end én gang, fx hvis WorkspaceApi stopper efter RabbitMQ har bekræftet,
