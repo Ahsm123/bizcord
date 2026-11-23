@@ -5,12 +5,54 @@
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [
-    { "key": "gatewayUrl", "value": "http://localhost:8080" },
-    { "key": "userId", "value": "" },
-    { "key": "token", "value": "" },
-    { "key": "readOnlyToken", "value": "" },
-    { "key": "serviceToken", "value": "" },
-    { "key": "workspaceId", "value": "" }
+    {
+      "key": "gatewayUrl",
+      "value": "http://localhost:8080"
+    },
+    {
+      "key": "userId",
+      "value": ""
+    },
+    {
+      "key": "token",
+      "value": ""
+    },
+    {
+      "key": "readOnlyToken",
+      "value": ""
+    },
+    {
+      "key": "serviceToken",
+      "value": ""
+    },
+    {
+      "key": "workspaceId",
+      "value": ""
+    },
+    {
+      "key": "otherUserToken",
+      "value": ""
+    },
+    {
+      "key": "uploadWorkspaceId",
+      "value": ""
+    },
+    {
+      "key": "channelId",
+      "value": ""
+    },
+    {
+      "key": "uploadId",
+      "value": ""
+    },
+    {
+      "key": "bigUploadId",
+      "value": ""
+    },
+    {
+      "key": "pollAttempts",
+      "value": ""
+    }
   ],
   "item": [
     {
@@ -46,10 +88,15 @@
           ],
           "request": {
             "method": "POST",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"claims\": {\n    \"sub\": \"{{userId}}\",\n    \"role\": \"user\",\n    \"scope\": \"workspace.read workspace.write channel.read channel.write\"\n  }\n}"
+              "raw": "{\n  \"claims\": {\n    \"sub\": \"{{userId}}\",\n    \"role\": \"user\",\n    \"scope\": \"workspace.read workspace.write channel.read channel.write file.read file.write\"\n  }\n}"
             },
             "url": "{{gatewayUrl}}/faucet"
           }
@@ -73,7 +120,12 @@
           ],
           "request": {
             "method": "POST",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"claims\": {\n    \"sub\": \"{{userId}}\",\n    \"role\": \"user\",\n    \"scope\": \"workspace.read\"\n  }\n}"
@@ -100,12 +152,46 @@
           ],
           "request": {
             "method": "POST",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"claims\": {\n    \"sub\": \"message-api\",\n    \"role\": \"internal-service\"\n  }\n}"
             },
             "url": "{{gatewayUrl}}/faucet"
+          }
+        },
+        {
+          "name": "Token for another user, file.read only",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('faucet returns a token', () => pm.response.to.have.status(200));",
+                  "pm.collectionVariables.set('otherUserToken', pm.response.json().value);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{gatewayUrl}}/faucet",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"claims\": {\n    \"sub\": \"{{$guid}}\",\n    \"role\": \"user\",\n    \"scope\": \"file.read\"\n  }\n}"
+            }
           }
         }
       ]
@@ -121,7 +207,9 @@
               "listen": "test",
               "script": {
                 "type": "text/javascript",
-                "exec": ["pm.test('401 without a token', () => pm.response.to.have.status(401));"]
+                "exec": [
+                  "pm.test('401 without a token', () => pm.response.to.have.status(401));"
+                ]
               }
             }
           ],
@@ -138,13 +226,20 @@
               "listen": "test",
               "script": {
                 "type": "text/javascript",
-                "exec": ["pm.test('403 when the token lacks role internal-service', () => pm.response.to.have.status(403));"]
+                "exec": [
+                  "pm.test('403 when the token lacks role internal-service', () => pm.response.to.have.status(403));"
+                ]
               }
             }
           ],
           "request": {
             "method": "GET",
-            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
             "url": "{{gatewayUrl}}/internal/channels/{{$guid}}/members/{{userId}}"
           }
         },
@@ -164,7 +259,12 @@
           ],
           "request": {
             "method": "GET",
-            "header": [{ "key": "Authorization", "value": "Bearer {{serviceToken}}" }],
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{serviceToken}}"
+              }
+            ],
             "url": "{{gatewayUrl}}/internal/channels/{{$guid}}/members/{{userId}}"
           }
         }
@@ -181,7 +281,9 @@
               "listen": "test",
               "script": {
                 "type": "text/javascript",
-                "exec": ["pm.test('401 without a token', () => pm.response.to.have.status(401));"]
+                "exec": [
+                  "pm.test('401 without a token', () => pm.response.to.have.status(401));"
+                ]
               }
             }
           ],
@@ -198,13 +300,20 @@
               "listen": "test",
               "script": {
                 "type": "text/javascript",
-                "exec": ["pm.test('401 with a token the gateway did not sign', () => pm.response.to.have.status(401));"]
+                "exec": [
+                  "pm.test('401 with a token the gateway did not sign', () => pm.response.to.have.status(401));"
+                ]
               }
             }
           ],
           "request": {
             "method": "GET",
-            "header": [{ "key": "Authorization", "value": "Bearer invalid.token.value" }],
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer invalid.token.value"
+              }
+            ],
             "url": "{{gatewayUrl}}/api/v1/workspaces"
           }
         },
@@ -215,17 +324,28 @@
               "listen": "test",
               "script": {
                 "type": "text/javascript",
-                "exec": ["pm.test('403 when the token lacks workspace.write', () => pm.response.to.have.status(403));"]
+                "exec": [
+                  "pm.test('403 when the token lacks workspace.write', () => pm.response.to.have.status(403));"
+                ]
               }
             }
           ],
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{readOnlyToken}}" },
-              { "key": "Content-Type", "value": "application/json" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{readOnlyToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
             ],
-            "body": { "mode": "raw", "raw": "{ \"name\": \"should-not-be-created\" }" },
+            "body": {
+              "mode": "raw",
+              "raw": "{ \"name\": \"should-not-be-created\" }"
+            },
             "url": "{{gatewayUrl}}/api/v1/workspaces"
           }
         },
@@ -236,13 +356,20 @@
               "listen": "test",
               "script": {
                 "type": "text/javascript",
-                "exec": ["pm.test('200 when the token has workspace.read', () => pm.response.to.have.status(200));"]
+                "exec": [
+                  "pm.test('200 when the token has workspace.read', () => pm.response.to.have.status(200));"
+                ]
               }
             }
           ],
           "request": {
             "method": "GET",
-            "header": [{ "key": "Authorization", "value": "Bearer {{readOnlyToken}}" }],
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{readOnlyToken}}"
+              }
+            ],
             "url": "{{gatewayUrl}}/api/v1/workspaces"
           }
         }
@@ -272,10 +399,19 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{token}}" },
-              { "key": "Content-Type", "value": "application/json" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
             ],
-            "body": { "mode": "raw", "raw": "{ \"name\": \"postman-gateway-test\" }" },
+            "body": {
+              "mode": "raw",
+              "raw": "{ \"name\": \"postman-gateway-test\" }"
+            },
             "url": "{{gatewayUrl}}/api/v1/workspaces"
           }
         },
@@ -299,7 +435,12 @@
           ],
           "request": {
             "method": "GET",
-            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
             "url": "{{gatewayUrl}}/api/v1/workspaces"
           }
         },
@@ -324,8 +465,14 @@
           "request": {
             "method": "GET",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{token}}" },
-              { "key": "X-User-Id", "value": "{{$guid}}" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              },
+              {
+                "key": "X-User-Id",
+                "value": "{{$guid}}"
+              }
             ],
             "url": "{{gatewayUrl}}/api/v1/workspaces"
           }
@@ -348,7 +495,12 @@
           ],
           "request": {
             "method": "GET",
-            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
             "url": "{{gatewayUrl}}/api/v1/workspaces/{{workspaceId}}"
           }
         },
@@ -359,17 +511,28 @@
               "listen": "test",
               "script": {
                 "type": "text/javascript",
-                "exec": ["pm.test('204', () => pm.response.to.have.status(204));"]
+                "exec": [
+                  "pm.test('204', () => pm.response.to.have.status(204));"
+                ]
               }
             }
           ],
           "request": {
             "method": "PUT",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{token}}" },
-              { "key": "Content-Type", "value": "application/json" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
             ],
-            "body": { "mode": "raw", "raw": "{ \"name\": \"postman-gateway-test-renamed\" }" },
+            "body": {
+              "mode": "raw",
+              "raw": "{ \"name\": \"postman-gateway-test-renamed\" }"
+            },
             "url": "{{gatewayUrl}}/api/v1/workspaces/{{workspaceId}}"
           }
         },
@@ -392,10 +555,19 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{token}}" },
-              { "key": "Content-Type", "value": "application/json" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
             ],
-            "body": { "mode": "raw", "raw": "{ \"name\": \"general\" }" },
+            "body": {
+              "mode": "raw",
+              "raw": "{ \"name\": \"general\" }"
+            },
             "url": "{{gatewayUrl}}/api/v1/workspaces/{{workspaceId}}/channels"
           }
         },
@@ -418,7 +590,12 @@
           ],
           "request": {
             "method": "GET",
-            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
             "url": "{{gatewayUrl}}/api/v1/workspaces/{{workspaceId}}/channels"
           }
         },
@@ -429,13 +606,20 @@
               "listen": "test",
               "script": {
                 "type": "text/javascript",
-                "exec": ["pm.test('204', () => pm.response.to.have.status(204));"]
+                "exec": [
+                  "pm.test('204', () => pm.response.to.have.status(204));"
+                ]
               }
             }
           ],
           "request": {
             "method": "DELETE",
-            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
             "url": "{{gatewayUrl}}/api/v1/workspaces/{{workspaceId}}"
           }
         },
@@ -446,14 +630,558 @@
               "listen": "test",
               "script": {
                 "type": "text/javascript",
-                "exec": ["pm.test('404 from WorkspaceApi passes through the gateway', () => pm.response.to.have.status(404));"]
+                "exec": [
+                  "pm.test('404 from WorkspaceApi passes through the gateway', () => pm.response.to.have.status(404));"
+                ]
               }
             }
           ],
           "request": {
             "method": "GET",
-            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
             "url": "{{gatewayUrl}}/api/v1/workspaces/{{workspaceId}}"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Uploads and the saga",
+      "description": "The upload saga from docs/upload-saga.md through the gateway: an upload that fits ends Confirmed, one that is bigger than the quota ends Rejected, and only the uploader can see an upload.",
+      "item": [
+        {
+          "name": "Create a workspace for uploads",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('201', () => pm.response.to.have.status(201));",
+                  "pm.collectionVariables.set('uploadWorkspaceId', pm.response.json().id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{gatewayUrl}}/api/v1/workspaces",
+            "body": {
+              "mode": "raw",
+              "raw": "{ \"name\": \"postman-upload-test\" }"
+            }
+          }
+        },
+        {
+          "name": "Create a channel to upload to",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('201', () => pm.response.to.have.status(201));",
+                  "pm.collectionVariables.set('channelId', pm.response.json().id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{gatewayUrl}}/api/v1/workspaces/{{uploadWorkspaceId}}/channels",
+            "body": {
+              "mode": "raw",
+              "raw": "{ \"name\": \"general\" }"
+            }
+          }
+        },
+        {
+          "name": "Upload a file that fits returns 202",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('202 with a Pending upload', () => {",
+                  "    pm.response.to.have.status(202);",
+                  "    pm.expect(pm.response.json().status).to.eql('Pending');",
+                  "});",
+                  "pm.test('Location points at the gateway, not the internal service', () => {",
+                  "    const location = pm.response.headers.get('Location');",
+                  "    pm.expect(location).to.include('/api/v1/uploads/' + pm.response.json().id);",
+                  "    pm.expect(location).to.not.include('file-api');",
+                  "});",
+                  "pm.collectionVariables.set('uploadId', pm.response.json().id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{gatewayUrl}}/api/v1/uploads",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"workspaceId\": \"{{uploadWorkspaceId}}\",\n  \"channelId\": \"{{channelId}}\",\n  \"fileName\": \"report.pdf\",\n  \"sizeBytes\": 1024,\n  \"message\": \"Here is the report\"\n}"
+            }
+          }
+        },
+        {
+          "name": "The upload that fits is Confirmed",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// Gives the saga a moment between polls",
+                  "setTimeout(() => {}, 1000);"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.json();",
+                  "const attempts = Number(pm.collectionVariables.get('pollAttempts') || 0);",
+                  "if (body.status === 'Pending' && attempts < 10) {",
+                  "    pm.collectionVariables.set('pollAttempts', attempts + 1);",
+                  "    postman.setNextRequest(pm.info.requestName);",
+                  "    return;",
+                  "}",
+                  "pm.collectionVariables.set('pollAttempts', 0);",
+                  "pm.test('the saga ended with Confirmed', () => {",
+                  "    pm.response.to.have.status(200);",
+                  "    pm.expect(body.status).to.eql('Confirmed');",
+                  "    pm.expect(body.rejectionReason).to.be.null;",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": "{{gatewayUrl}}/api/v1/uploads/{{uploadId}}"
+          }
+        },
+        {
+          "name": "Upload a file bigger than the quota returns 202",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('202, the quota is checked by the saga afterwards', () => pm.response.to.have.status(202));",
+                  "pm.collectionVariables.set('bigUploadId', pm.response.json().id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{gatewayUrl}}/api/v1/uploads",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"workspaceId\": \"{{uploadWorkspaceId}}\",\n  \"channelId\": \"{{channelId}}\",\n  \"fileName\": \"huge.zip\",\n  \"sizeBytes\": 209715200\n}"
+            }
+          }
+        },
+        {
+          "name": "The upload bigger than the quota is Rejected",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// Gives the saga a moment between polls",
+                  "setTimeout(() => {}, 1000);"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.json();",
+                  "const attempts = Number(pm.collectionVariables.get('pollAttempts') || 0);",
+                  "if (body.status === 'Pending' && attempts < 10) {",
+                  "    pm.collectionVariables.set('pollAttempts', attempts + 1);",
+                  "    postman.setNextRequest(pm.info.requestName);",
+                  "    return;",
+                  "}",
+                  "pm.collectionVariables.set('pollAttempts', 0);",
+                  "pm.test('the saga ended with Rejected', () => {",
+                  "    pm.response.to.have.status(200);",
+                  "    pm.expect(body.status).to.eql('Rejected');",
+                  "    pm.expect(body.rejectionReason).to.eql('Not enough storage left in the workspace');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": "{{gatewayUrl}}/api/v1/uploads/{{bigUploadId}}"
+          }
+        },
+        {
+          "name": "Another user gets 404 for the upload",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('404, others can not tell the upload exists', () => pm.response.to.have.status(404));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{otherUserToken}}"
+              }
+            ],
+            "url": "{{gatewayUrl}}/api/v1/uploads/{{uploadId}}"
+          }
+        },
+        {
+          "name": "Upload without a token returns 401",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('401', () => pm.response.to.have.status(401));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{gatewayUrl}}/api/v1/uploads",
+            "body": {
+              "mode": "raw",
+              "raw": "{ \"fileName\": \"a.txt\" }"
+            }
+          }
+        },
+        {
+          "name": "Upload without file.write returns 403",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('403 at the gateway', () => pm.response.to.have.status(403));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{readOnlyToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{gatewayUrl}}/api/v1/uploads",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"workspaceId\": \"{{uploadWorkspaceId}}\",\n  \"channelId\": \"{{channelId}}\",\n  \"fileName\": \"a.txt\",\n  \"sizeBytes\": 1\n}"
+            }
+          }
+        },
+        {
+          "name": "Invalid upload returns 400",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('400', () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{gatewayUrl}}/api/v1/uploads",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"workspaceId\": \"{{uploadWorkspaceId}}\",\n  \"channelId\": \"{{channelId}}\",\n  \"fileName\": \"a.txt\",\n  \"sizeBytes\": 0\n}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "GraphQL",
+      "description": "The GraphQL endpoint in WorkspaceApi through the gateway (docs/graphql.md). The gateway lets a token through with any GraphQL scope, and WorkspaceApi checks the exact scope per field.",
+      "item": [
+        {
+          "name": "Query a workspace with its channels and members",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 with the workspace, its channels and members in one response', () => {",
+                  "    pm.response.to.have.status(200);",
+                  "    const workspace = pm.response.json().data.workspace;",
+                  "    pm.expect(workspace.name).to.eql('postman-upload-test');",
+                  "    pm.expect(workspace.channels.map(c => c.name)).to.include('general');",
+                  "    pm.expect(workspace.members[0].role).to.eql('ADMIN');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{gatewayUrl}}/graphql",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"query($id: UUID!) { workspace(id: $id) { name channels { name } members { role } } }\",\n  \"variables\": {\n    \"id\": \"{{uploadWorkspaceId}}\"\n  }\n}"
+            }
+          }
+        },
+        {
+          "name": "Mutation creates a workspace",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('the workspace is created', () => {",
+                  "    pm.response.to.have.status(200);",
+                  "    pm.expect(pm.response.json().data.createWorkspace.name).to.eql('postman-graphql-test');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{gatewayUrl}}/graphql",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"mutation { createWorkspace(name: \\\"postman-graphql-test\\\") { id name } }\",\n  \"variables\": {}\n}"
+            }
+          }
+        },
+        {
+          "name": "Mutation with only workspace.read is not authorized",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('refused by WorkspaceApi, nothing is created', () => {",
+                  "    const body = pm.response.json();",
+                  "    pm.expect(body.data).to.be.null;",
+                  "    pm.expect(body.errors[0].extensions.code).to.eql('AUTH_NOT_AUTHORIZED');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{readOnlyToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{gatewayUrl}}/graphql",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"mutation { createWorkspace(name: \\\"should-not-be-created\\\") { id } }\",\n  \"variables\": {}\n}"
+            }
+          }
+        },
+        {
+          "name": "Unknown workspace returns a NotFound error",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('the same code and status as the REST API', () => {",
+                  "    const extensions = pm.response.json().errors[0].extensions;",
+                  "    pm.expect(extensions.code).to.eql('Workspace.NotFound');",
+                  "    pm.expect(extensions.status).to.eql(404);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{gatewayUrl}}/graphql",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"query($id: UUID!) { workspace(id: $id) { name } }\",\n  \"variables\": {\n    \"id\": \"{{$guid}}\"\n  }\n}"
+            }
+          }
+        },
+        {
+          "name": "Token without a GraphQL scope returns 403",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('403 at the gateway', () => pm.response.to.have.status(403));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{otherUserToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{gatewayUrl}}/graphql",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"{ myWorkspaces { id } }\",\n  \"variables\": {}\n}"
+            }
           }
         }
       ]
