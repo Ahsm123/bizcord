@@ -75,12 +75,14 @@ what fails, what happens then, and whether it is handled or still open.
 | A retried `POST /workspaces` creates two workspaces     | Idempotency key                | `Idempotency-Key` header (#67), [decision](decisions.md#idempotent-oprettelse-af-workspaces-67) |
 | Two requests overwrite each other's change              | Optimistic concurrency, 409    | `version` on workspaces (#68), [decision](decisions.md#samtidige-ændringer-af-et-workspace-68) |
 | A service in the saga never answers                     | Timeout job and compensation   | [StalledUploads](../src/Bizcord.FileApi/Services/StalledUploads.cs) (#82)                    |
+| RabbitMQ is down when a service starts                  | Retry with backoff, forever    | [MessageHandlerWorker](../src/Bizcord.MessageClient/Workers/MessageHandlerWorker.cs) (#103) |
 
 **Verify:**
 
 - Tests: `RequestTimeoutTests`, `OutboxTests` (an event saved while RabbitMQ is down goes out when it is back),
   `IdempotencyKeyTests` and `IdempotencyKeyRepositoryTests` (five parallel requests with one key create one workspace),
-  `WorkspaceConcurrencyTests` (parallel changes: none is lost, the rest get 409), `StalledUploadsTests`.
+  `WorkspaceConcurrencyTests` (parallel changes: none is lost, the rest get 409), `StalledUploadsTests`,
+  `SubscribeRetryTests`.
 - By hand: `docker compose stop workspace-api`, upload a file through the gateway, and after 30 seconds
   `GET api/v1/uploads/{id}` says `Rejected`. Start it again, and the quota is not reserved
   ([upload-saga.md](upload-saga.md#try-it)).
