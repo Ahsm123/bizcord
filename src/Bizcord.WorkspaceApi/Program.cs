@@ -1,4 +1,5 @@
 using System.Reflection;
+using System.Security.Claims;
 using System.Text;
 using Bizcord.MessageClient;
 using Bizcord.Vault;
@@ -9,6 +10,7 @@ using Bizcord.WorkspaceApi.GraphQL;
 using Bizcord.WorkspaceApi.Outbox;
 using Bizcord.WorkspaceApi.Services;
 using DbUp;
+using HotChocolate.Execution;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http.Timeouts;
@@ -69,7 +71,18 @@ builder.Services.AddGraphQLServer()
     .AddAuthorization()
     .AddQueryType<WorkspaceQueries>()
     .AddMutationType<WorkspaceMutations>()
-    .ModifyRequestOptions(o => o.IncludeExceptionDetails = builder.Environment.IsDevelopment());
+    .ModifyRequestOptions(o => o.IncludeExceptionDetails = builder.Environment.IsDevelopment())
+    // The first GraphQL request is 5-10 times slower than the next ones, so on a busy machine it can reach the
+    // 2 s request timeout. Run one operation at startup instead (#108). The user is anonymous, so authorization
+    // refuses the field before its resolver runs and this doesn't touch the database.
+    .AddWarmupTask(async (executor, ct) =>
+    {
+        var request = OperationRequestBuilder.New()
+            .SetDocument("{ myWorkspaces { id } }")
+            .SetUser(new ClaimsPrincipal(new ClaimsIdentity()))
+            .Build();
+        await using var result = await executor.ExecuteAsync(request, ct);
+    });
 
 builder.Services.AddRequestTimeouts(options =>
     options.DefaultPolicy = new RequestTimeoutPolicy { Timeout = TimeSpan.FromSeconds(2) });
