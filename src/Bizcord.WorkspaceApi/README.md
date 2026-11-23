@@ -49,6 +49,9 @@ Week 44, Task 01: where WorkspaceApi can fail, what happens then, and what we do
   client that sends an `Idempotency-Key` now gets the first workspace back.
 - **Open:** The header is optional, so a client without it can still create two workspaces.
 - **Open:** WorkspaceApi doesn't limit incoming requests, so a spike or many retries can overload it and Postgres.
+- **Handled (#108):** The first GraphQL request after a start was 5-10 times slower than the next ones, because Hot
+  Chocolate runs its pipeline for the first time, so on a busy machine the 2 s timeout could cut it off with 504.
+  WorkspaceApi now runs one GraphQL operation at startup.
 
 ## Message, via MessagePostedEvent
 
