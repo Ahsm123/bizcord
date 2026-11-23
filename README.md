@@ -56,6 +56,11 @@ How the services talk to each other:
 - [GraphQL](docs/graphql.md): the GraphQL endpoint in WorkspaceApi for frontend clients
 - [Upload saga](docs/upload-saga.md): how File, Workspace and Message work together on an upload
 
+## Compulsory Assignment #2
+
+How each task from weeks 43–47 is built, the decisions behind it, and how to run and verify it:
+[docs/README.md](docs/README.md).
+
 ## Running it
 
 The services read their connection strings and the JWT signing key from Vault. The first time on a new machine,
