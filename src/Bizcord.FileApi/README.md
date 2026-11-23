@@ -31,7 +31,8 @@ Week 44, Task 01 for FileApi: where it can fail, what happens then, and what we 
 - **Open:** When the timeout job rejects an upload, it publishes `ReleaseQuota` afterwards. If RabbitMQ is down at that
   moment, the release is lost and the space stays reserved in Workspace. An outbox, like WorkspaceApi has (#66), would
   fix it.
-- **Open:** If RabbitMQ is down when FileApi starts, the message worker stops the whole service (#103).
+- **Handled (#103):** If RabbitMQ is down when FileApi starts, the message worker keeps trying to subscribe instead
+  of stopping the service, so HTTP keeps answering and the saga replies are consumed once RabbitMQ is back.
 
 ## Vault
 

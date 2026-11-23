@@ -1,4 +1,4 @@
-﻿# Failure points
+# Failure points
 
 Week 44, Task 01: where WorkspaceApi can fail, what happens then, and what we do about it.
 **Handled** means there is a measure and a test, **Open** means we know about it and haven't fixed it.
@@ -29,10 +29,10 @@ Week 44, Task 01: where WorkspaceApi can fail, what happens then, and what we do
 - **Handled (#66):** `ChannelActivityUpdatedEvent` used to be published after the database update, so if RabbitMQ was
   down right then, the event was lost. Now it is saved in an outbox in the same transaction and published when
   RabbitMQ has confirmed it. Consumers can get it twice and dedupe on `EventId`.
-- **Open, tested 23 November:** If RabbitMQ is down when WorkspaceApi starts, HTTP works at first, but within a minute
-  subscribing to a queue times out, the message worker fails, and .NET stops the whole service, HTTP included. It
-  doesn't come back when RabbitMQ does. In compose this is softened by `depends_on: rabbitmq: service_healthy`, but there
-  is no restart policy. The fix is for the worker to keep retrying the subscription (#103).
+- **Handled (#103):** If RabbitMQ was down when WorkspaceApi started, subscribing to a queue timed out within a minute,
+  the message worker failed, and .NET stopped the whole service, HTTP included. Now the worker keeps trying to subscribe
+  (after 1, 2, 5, 10 and then every 30 seconds) and logs each try. Tested 23 November: HTTP kept answering with RabbitMQ
+  down for 80 seconds, and all three queues got their consumer back once RabbitMQ was up.
 - **Not tested:** what happens when RabbitMQ goes down while WorkspaceApi is running. EasyNetQ is meant to reconnect.
 
 ## Vault

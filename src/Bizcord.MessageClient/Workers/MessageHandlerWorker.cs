@@ -2,6 +2,7 @@ using Bizcord.MessageClient.Clients;
 using Bizcord.MessageClient.Handlers;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 
 namespace Bizcord.MessageClient.Workers;
 
@@ -10,26 +11,56 @@ namespace Bizcord.MessageClient.Workers;
 public class MessageHandlerWorker<T>(
     IMessageClient messageClient,
     IServiceScopeFactory scopeFactory,
+    ILogger<MessageHandlerWorker<T>> logger,
     string subscriberId,
-    TimeSpan[]? retryDelays = null) : BackgroundService
+    TimeSpan[]? retryDelays = null,
+    TimeSpan[]? subscribeDelays = null) : BackgroundService
 {
     private readonly TimeSpan[] _retryDelays =
         retryDelays ?? [TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(2), TimeSpan.FromSeconds(4)];
 
+    // The waits between attempts to subscribe. The last one repeats until it works.
+    private readonly TimeSpan[] _subscribeDelays = subscribeDelays ??
+    [
+        TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(2), TimeSpan.FromSeconds(5), TimeSpan.FromSeconds(10),
+        TimeSpan.FromSeconds(30)
+    ];
+
+    // Keeps trying to subscribe while RabbitMQ is unreachable (#103). Letting the exception out would make .NET stop
+    // the whole service, HTTP included, and it wouldn't come back when RabbitMQ does.
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        await messageClient.SubscribeAsync<T>(
-            subscriberId,
-            async message =>
+        for (var attempt = 1;; attempt++)
+        {
+            try
             {
-                // One scope per message, so scoped services are fresh each time
-                await using var scope = scopeFactory.CreateAsyncScope();
-                foreach (var handler in scope.ServiceProvider.GetServices<IMessageHandler<T>>())
+                await messageClient.SubscribeAsync<T>(subscriberId, message => HandleAsync(message, stoppingToken),
+                    stoppingToken);
+                if (attempt > 1)
                 {
-                    await HandleWithRetryAsync(handler, message, stoppingToken);
+                    logger.LogInformation("Subscribed {SubscriberId} on attempt {Attempt}", subscriberId, attempt);
                 }
-            },
-            stoppingToken);
+
+                return;
+            }
+            catch (Exception e) when (!stoppingToken.IsCancellationRequested)
+            {
+                var delay = _subscribeDelays[Math.Min(attempt - 1, _subscribeDelays.Length - 1)];
+                logger.LogWarning(e, "Could not subscribe {SubscriberId} on attempt {Attempt}, trying again in {Delay}",
+                    subscriberId, attempt, delay);
+                await Task.Delay(delay, stoppingToken);
+            }
+        }
+    }
+
+    private async Task HandleAsync(T message, CancellationToken stoppingToken)
+    {
+        // One scope per message, so scoped services are fresh each time
+        await using var scope = scopeFactory.CreateAsyncScope();
+        foreach (var handler in scope.ServiceProvider.GetServices<IMessageHandler<T>>())
+        {
+            await HandleWithRetryAsync(handler, message, stoppingToken);
+        }
     }
 
     private async Task HandleWithRetryAsync(IMessageHandler<T> handler, T message, CancellationToken ct)
