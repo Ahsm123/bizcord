@@ -155,6 +155,9 @@ services:
 
   rabbitmq:
     image: rabbitmq:4-management
+    # The healthcheck runs as this user too. As root it could create the Erlang cookie before the server did,
+    # owned by root, and RabbitMQ crashed on its first start because it couldn't read it (#110).
+    user: rabbitmq
     restart: always
     ports:
       - "5672:5672"
